@@ -31,6 +31,7 @@ pub struct LinkData {
   pub href: String
 }
 
+// TODO: sections in content (see Dwyring)
 pub fn parse(path: &str) -> Result<PageData, Box<dyn std::error::Error>> {
   let content = fs::read_to_string(path)?;
   let doc: serde_yaml::Value = serde_yaml::from_str(&content)?;
