@@ -21,7 +21,15 @@ pub struct SectionData {
   pub labels: String,
   pub img: String,
   pub content: Vec<String>,
+  #[serde(default)]
+  pub subsections: Vec<SubSectionData>,
   pub links: Vec<LinkData>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubSectionData {
+  pub title: String,
+  pub content: String
 }
 
 #[derive (Debug, Deserialize)]
@@ -31,7 +39,6 @@ pub struct LinkData {
   pub href: String
 }
 
-// TODO: sections in content (see Dwyring)
 pub fn parse(path: &str) -> Result<PageData, Box<dyn std::error::Error>> {
   let content = fs::read_to_string(path)?;
   let doc: serde_yaml::Value = serde_yaml::from_str(&content)?;

@@ -43,6 +43,14 @@ page:
           Je známý svou video-sérií Back to Basics, kde demonstruje nezbytnost osvojení základních principů hry.
           To je důležité i pro pokročilejší hráče, kteří se často nechají unést složitými agresivními taktickými kombinacemi,
           přičemž ztrácejí přehled a kontrolu nad hrou.
+      subsections:
+        - title: YouTube kanál Dwyrin
+          content: >
+            Komentované partie Go napříč populárními online Go servery proti různě silným protihráčům,
+            od DDK až po nejyšší úrovně DAN. Možnost nahlédnout, jakým způsobem Dwyrin nad svými tahy přemýšlí, velmi usnadňuje
+            pochopení herních principů a jejich použití v praxi.
+        - title: Knižní série Learning Go
+          content: Principy hry Go vysvětlené názornou a velmi čtivou formou. Obsahově i stylem podobné jeho YouTube videím.
       links:
         - kind: YouTube
           text: Dwyrin
