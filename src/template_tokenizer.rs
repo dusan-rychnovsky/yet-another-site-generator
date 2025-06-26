@@ -91,7 +91,7 @@ fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
   let parts: Vec<&str> = input.split_whitespace().collect();
   let tag =
     if parts[0] == "for" {
-      parse_for_tag(&parts[1..])?
+      parse_for_tag(parts)?
     }
     else if parts[0] == "endfor" {
       TemplateToken::EndFor(input[7..].trim().to_string())
@@ -102,14 +102,21 @@ fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
   Ok(tag)
 }
 
-fn parse_for_tag(parts: &[&str]) -> Result<TemplateToken, Box<dyn std::error::Error>> {
-  if parts.len() == 3 {
-    Ok(TemplateToken::For(parts[0].to_string(), parts[2].to_string()))
+fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, Box<dyn std::error::Error>> {
+  assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
+  if parts.len() == 4 {
+    if parts[2] != "in" {
+      return Err(Box::new(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        "Invalid for tag syntax. Missing 'in' keyword.",
+      )));
+    }
+    Ok(TemplateToken::For(parts[1].to_string(), parts[3].to_string()))
   } else {
     return Err(Box::new(std::io::Error::new(
       std::io::ErrorKind::InvalidData,
-      "Invalid for loop syntax.",
-    )));
+      format!("Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.", parts))
+    ));
   }
 }
 
@@ -165,5 +172,20 @@ mod tests {
       ],
       result
     );
+  }
+
+  #[test]
+  fn tokenize_content_fails_if_foreach_syntax_is_invalid() {
+    assert_invalid_for_syntax("[ for ]");
+    assert_invalid_for_syntax("[ for section in ]");
+    assert_invalid_for_syntax("[ for in section.content ]");
+    assert_invalid_for_syntax("[ for content section.content ]");
+    assert_invalid_for_syntax("[ for content : section.content ]");
+  }
+
+  fn assert_invalid_for_syntax(input: &str) {
+    let result = super::tokenize_content(input).unwrap_err();
+    assert!(result.to_string().contains("Invalid for tag syntax."),
+      "Expected error for input '{}', got: {}", input, result);
   }
 }
