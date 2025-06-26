@@ -70,10 +70,7 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
         rest = &rest[to+1..];
       }
       else {
-        return Err(Box::new(std::io::Error::new(
-          std::io::ErrorKind::InvalidData,
-          "Missing closing bracket.",
-        )));
+        return Err(error("Missing closing bracket."));
       }
     }
     else {
@@ -105,19 +102,24 @@ fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
 fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, Box<dyn std::error::Error>> {
   assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
   if parts.len() == 4 {
-    if parts[2] != "in" {
-      return Err(Box::new(std::io::Error::new(
-        std::io::ErrorKind::InvalidData,
-        "Invalid for tag syntax. Missing 'in' keyword.",
-      )));
+    if parts[2] == "in" {
+      Ok(TemplateToken::For(parts[1].to_string(), parts[3].to_string()))
     }
-    Ok(TemplateToken::For(parts[1].to_string(), parts[3].to_string()))
+    else {
+      Err(error("Invalid for tag syntax. Missing 'in' keyword."))
+    }
   } else {
-    return Err(Box::new(std::io::Error::new(
-      std::io::ErrorKind::InvalidData,
-      format!("Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.", parts))
-    ));
+    Err(error(
+      &format!(
+        "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
+        parts
+      )
+    ))
   }
+}
+
+fn error(msg: &str) -> Box<dyn std::error::Error> {
+  Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, msg))
 }
 
 #[cfg(test)]
