@@ -53,8 +53,18 @@ let mut tokens = Vec::new();
 fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Error>> {
   let mut tokens = Vec::new();
 
-  let text = TemplateToken::Text(String::from(input));
-  tokens.push(text);
+  let mut rest = input;
+  while !rest.is_empty() {
+    if let Some(start) = rest.find('[') {
+      let expr = &rest[start+1..rest.len()-1];
+      tokens.push(TemplateToken::Var(expr.to_string()));
+      break;
+    }
+    else {
+      tokens.push(TemplateToken::Text(rest.to_string()));
+      break;
+    }
+  }
 
   Ok(tokens)
 }
@@ -68,6 +78,15 @@ mod tests {
     let result = tokenize_content("Hello, world!").unwrap();
     assert_eq!(
       vec![TemplateToken::Text("Hello, world!".to_string())],
+      result
+    );
+  }
+
+  #[test]
+  fn tokenize_content_handles_var() {
+    let result = tokenize_content("[section.title]").unwrap();
+    assert_eq!(
+      vec![TemplateToken::Var("section.title".to_string())],
       result
     );
   }
