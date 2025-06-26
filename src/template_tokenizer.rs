@@ -55,10 +55,18 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
 
   let mut rest = input;
   while !rest.is_empty() {
-    if let Some(start) = rest.find('[') {
-      let expr = &rest[start+1..rest.len()-1];
-      tokens.push(TemplateToken::Var(expr.to_string()));
-      break;
+    if let Some(from) = rest.find('[') {
+      if let Some(to) = rest.find(']') {
+        let expr = &rest[from+1..to];
+        tokens.push(TemplateToken::Var(expr.to_string()));
+        break;
+      }
+      else {
+        return Err(Box::new(std::io::Error::new(
+          std::io::ErrorKind::InvalidData,
+          "Missing closing bracket.",
+        )));
+      }
     }
     else {
       tokens.push(TemplateToken::Text(rest.to_string()));
@@ -89,5 +97,11 @@ mod tests {
       vec![TemplateToken::Var("section.title".to_string())],
       result
     );
+  }
+
+  #[test]
+  fn tokenize_content_fails_if_no_closing_bracket() {
+    let result = tokenize_content("[section.title").unwrap_err();
+    assert!(result.to_string().contains("Missing closing bracket."));
   }
 }
