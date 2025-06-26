@@ -63,10 +63,11 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
         tokens.push(text);
       }
       if let Some(to) = rest.find(']') {
-        let var = rest[from+1..to].to_string();
-        let var = TemplateToken::Var(var);
-        println!("var: {:?}", var);
-        tokens.push(var);
+        let tag_input = &rest[from+1..to];
+        println!("tag input: '{}'", tag_input);
+        let tag = parse_tag(tag_input)?;
+        println!("tag: {:?}", tag);
+        tokens.push(tag);
         rest = &rest[to+1..];
       }
       else {
@@ -86,6 +87,30 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
   }
 
   Ok(tokens)
+}
+
+fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
+  let input = input.trim();
+  let tag =
+    if input.starts_with("for ") {
+      let parts: Vec<&str> = input.split_whitespace().collect();
+      if parts.len() == 4 {
+        TemplateToken::For(parts[1].to_string(), parts[3].to_string())
+      } else {
+        return Err(Box::new(std::io::Error::new(
+          std::io::ErrorKind::InvalidData,
+          "Invalid for loop syntax.",
+        )));
+      }
+    }
+    else if input.starts_with("endfor") {
+      TemplateToken::EndFor(input[7..].trim().to_string())
+    }
+    else {
+      let var = TemplateToken::Var(input.to_string());
+      TemplateToken::Var(input.to_string())
+    };
+  Ok(tag)
 }
 
 #[cfg(test)]
@@ -124,6 +149,19 @@ mod tests {
         TemplateToken::Text("Hello, ".to_string()),
         TemplateToken::Var("section.title".to_string()),
         TemplateToken::Text("!".to_string())
+      ],
+      result
+    );
+  }
+
+  #[test]
+  fn tokenize_content_handles_foreach() {
+    let result = tokenize_content("[ for content in section.content ]\nSome text.\n[ endfor content ]").unwrap();
+    assert_eq!(
+      vec![
+        TemplateToken::For("content".to_string(), "section.content".to_string()),
+        TemplateToken::Text("\nSome text.\n".to_string()),
+        TemplateToken::EndFor("content".to_string())
       ],
       result
     );
