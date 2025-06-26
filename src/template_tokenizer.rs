@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken {
-  Text(String),
+  Text(String), // TODO: replace with string slice with lifetime
   Var(String),
   For(String, String),
   EndFor(String),
@@ -17,14 +17,12 @@ pub fn tokenize(path: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Er
 /*
 let mut tokens = Vec::new();
   let mut rest = input;
-
   while !rest.is_empty() {
-    if let Some(start) = rest.find("{{") {
-      // Text before variable
+    if let Some(start) = rest.find("[") {
       if start > 0 {
         tokens.push(TemplateToken::Text(rest[..start].to_string()));
       }
-      if let Some(end) = rest.find("}}") {
+      if let Some(end) = rest.find("]") {
         let var = rest[start + 2..end].trim().to_string();
         if var.starts_with("for ") {
           let parts: Vec<&str> = var.split_whitespace().collect();
@@ -51,8 +49,26 @@ let mut tokens = Vec::new();
     }
   }
 
-  Ok(tokens)
  */
 fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Error>> {
-  Ok(Vec::new())
+  let mut tokens = Vec::new();
+
+  let text = TemplateToken::Text(String::from(input));
+  tokens.push(text);
+
+  Ok(tokens)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn tokenize_content_handles_text() {
+    let result = tokenize_content("Hello, world!").unwrap();
+    assert_eq!(
+      vec![TemplateToken::Text("Hello, world!".to_string())],
+      result
+    );
+  }
 }
