@@ -52,7 +52,6 @@ let mut tokens = Vec::new();
  */
 fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Error>> {
   let mut tokens = Vec::new();
-
   let mut rest = input;
   while !rest.is_empty() {
     if let Some(from) = rest.find('[') {
@@ -85,32 +84,33 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
       break;
     }
   }
-
   Ok(tokens)
 }
 
 fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
-  let input = input.trim();
+  let parts: Vec<&str> = input.split_whitespace().collect();
   let tag =
-    if input.starts_with("for ") {
-      let parts: Vec<&str> = input.split_whitespace().collect();
-      if parts.len() == 4 {
-        TemplateToken::For(parts[1].to_string(), parts[3].to_string())
-      } else {
-        return Err(Box::new(std::io::Error::new(
-          std::io::ErrorKind::InvalidData,
-          "Invalid for loop syntax.",
-        )));
-      }
+    if parts[0] == "for" {
+      parse_for_tag(&parts[1..])?
     }
-    else if input.starts_with("endfor") {
+    else if parts[0] == "endfor" {
       TemplateToken::EndFor(input[7..].trim().to_string())
     }
     else {
-      let var = TemplateToken::Var(input.to_string());
       TemplateToken::Var(input.to_string())
     };
   Ok(tag)
+}
+
+fn parse_for_tag(parts: &[&str]) -> Result<TemplateToken, Box<dyn std::error::Error>> {
+  if parts.len() == 3 {
+    Ok(TemplateToken::For(parts[0].to_string(), parts[2].to_string()))
+  } else {
+    return Err(Box::new(std::io::Error::new(
+      std::io::ErrorKind::InvalidData,
+      "Invalid for loop syntax.",
+    )));
+  }
 }
 
 #[cfg(test)]
