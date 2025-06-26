@@ -56,10 +56,18 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
   let mut rest = input;
   while !rest.is_empty() {
     if let Some(from) = rest.find('[') {
+      if from > 0 {
+        let text = rest[..from].to_string();
+        let text = TemplateToken::Text(text);
+        println!("text: {:?}", text);
+        tokens.push(text);
+      }
       if let Some(to) = rest.find(']') {
-        let expr = &rest[from+1..to];
-        tokens.push(TemplateToken::Var(expr.to_string()));
-        break;
+        let var = rest[from+1..to].to_string();
+        let var = TemplateToken::Var(var);
+        println!("var: {:?}", var);
+        tokens.push(var);
+        rest = &rest[to+1..];
       }
       else {
         return Err(Box::new(std::io::Error::new(
@@ -69,7 +77,10 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
       }
     }
     else {
-      tokens.push(TemplateToken::Text(rest.to_string()));
+      let text = rest.to_string();
+      let text = TemplateToken::Text(text);
+      println!("text: {:?}", text);
+      tokens.push(text);
       break;
     }
   }
@@ -103,5 +114,18 @@ mod tests {
   fn tokenize_content_fails_if_no_closing_bracket() {
     let result = tokenize_content("[section.title").unwrap_err();
     assert!(result.to_string().contains("Missing closing bracket."));
+  }
+
+  #[test]
+  fn tokenize_content_handles_mixed_text_and_var() {
+    let result = tokenize_content("Hello, [section.title]!").unwrap();
+    assert_eq!(
+      vec![
+        TemplateToken::Text("Hello, ".to_string()),
+        TemplateToken::Var("section.title".to_string()),
+        TemplateToken::Text("!".to_string())
+      ],
+      result
+    );
   }
 }
