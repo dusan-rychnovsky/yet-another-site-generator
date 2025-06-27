@@ -191,13 +191,20 @@ mod tests {
   }
 
   #[test]
-  fn tokenize_content_fails_if_foreach_syntax_is_invalid() {
+  fn tokenize_content_fails_if_for_syntax_is_invalid() {
     let error = "Invalid for tag syntax.";
     assert_invalid_syntax("[ for ]", error);
     assert_invalid_syntax("[ for section in ]", error);
     assert_invalid_syntax("[ for in section.content ]", error);
     assert_invalid_syntax("[ for content section.content ]", error);
     assert_invalid_syntax("[ for content : section.content ]", error);
+  }
+
+  #[test]
+  fn tokenize_content_fails_if_endfor_syntax_is_invalid() {
+    let error = "Invalid endfor tag syntax.";
+    assert_invalid_syntax("[ endfor ]", error);
+    assert_invalid_syntax("[ endfor content extra ]", error);
   }
 
   fn assert_invalid_syntax(input: &str, expected: &str) {
