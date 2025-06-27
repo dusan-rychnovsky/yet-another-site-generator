@@ -174,16 +174,17 @@ mod tests {
 
   #[test]
   fn tokenize_content_fails_if_foreach_syntax_is_invalid() {
-    assert_invalid_for_syntax("[ for ]");
-    assert_invalid_for_syntax("[ for section in ]");
-    assert_invalid_for_syntax("[ for in section.content ]");
-    assert_invalid_for_syntax("[ for content section.content ]");
-    assert_invalid_for_syntax("[ for content : section.content ]");
+    let error = "Invalid for tag syntax.";
+    assert_invalid_syntax("[ for ]", error);
+    assert_invalid_syntax("[ for section in ]", error);
+    assert_invalid_syntax("[ for in section.content ]", error);
+    assert_invalid_syntax("[ for content section.content ]", error);
+    assert_invalid_syntax("[ for content : section.content ]", error);
   }
 
-  fn assert_invalid_for_syntax(input: &str) {
+  fn assert_invalid_syntax(input: &str, expected: &str) {
     let err = super::tokenize_content(input).unwrap_err();
-    assert!(err.contains("Invalid for tag syntax."),
+    assert!(err.contains(expected),
       "Expected error for input '{}', got: {}", input, err);
   }
 }
