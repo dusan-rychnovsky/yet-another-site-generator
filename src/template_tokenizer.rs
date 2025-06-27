@@ -88,16 +88,11 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
 
 fn parse_tag(input: &str) -> Result<TemplateToken, String> {
   let parts: Vec<&str> = input.split_whitespace().collect();
-  let tag =
-    if parts[0] == "for" {
-      parse_for_tag(parts)?
-    }
-    else if parts[0] == "endfor" {
-      parse_endfor_tag(parts)?
-    }
-    else {
-      TemplateToken::Var(input.to_string())
-    };
+  let tag = match parts[0] {
+    "for" => parse_for_tag(parts)?,
+    "endfor" => parse_endfor_tag(parts)?,
+    _ => TemplateToken::Var(input.to_string()),
+  };
   Ok(tag)
 }
 
