@@ -1,3 +1,5 @@
+use crate::data_file_parser::parse;
+
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken {
   Text(String), // TODO: replace with string slice with lifetime
@@ -91,7 +93,7 @@ fn parse_tag(input: &str) -> Result<TemplateToken, String> {
       parse_for_tag(parts)?
     }
     else if parts[0] == "endfor" {
-      TemplateToken::EndFor(input[7..].trim().to_string())
+      parse_endfor_tag(parts)?
     }
     else {
       TemplateToken::Var(input.to_string())
@@ -108,10 +110,26 @@ fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
     else {
       Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
     }
-  } else {
+  }
+  else {
     Err(
       format!(
         "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
+        parts
+      )
+    )
+  }
+}
+
+fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+  assert!(parts[0] == "endfor", "Expected 'endfor' tag, got: {}", parts[0]);
+  if parts.len() == 2 {
+    Ok(TemplateToken::EndFor(parts[1].to_string()))
+  }
+  else {
+    Err(
+      format!(
+        "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
         parts
       )
     )
