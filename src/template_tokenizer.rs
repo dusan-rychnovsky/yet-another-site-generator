@@ -55,9 +55,31 @@ fn parse_tag(input: &str) -> Result<TemplateToken, String> {
   let tag = match parts[0] {
     "for" => parse_for_tag(parts)?,
     "endfor" => parse_endfor_tag(parts)?,
+    "if" => parse_if_tag(parts)?,
+    "endif" => parse_endif_tag(parts)?,
     _ => TemplateToken::Var(input.to_string()),
   };
   Ok(tag)
+}
+
+fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+  assert!(parts[0] == "endif", "Expected 'endif' tag, got: {}", parts[0]);
+  if parts.len() == 1 {
+    Ok(TemplateToken::EndIf)
+  }
+  else {
+    Err("Invalid endif tag syntax. No parameters expected.".to_string())
+  }
+}
+
+fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+  assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
+  if parts.len() > 1 {
+    Ok(TemplateToken::If(parts[1..].join(" ")))
+  }
+  else {
+    Err("Invalid if tag syntax. Missing expression.".to_string())
+  }
 }
 
 fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
@@ -137,7 +159,7 @@ mod tests {
   }
 
   #[test]
-  fn tokenize_content_handles_foreach() {
+  fn tokenize_content_handles_for_endfor() {
     let result = tokenize_content("[ for content in section.content ]\nSome text.\n[ endfor content ]").unwrap();
     assert_eq!(
       vec![
@@ -164,6 +186,31 @@ mod tests {
     let error = "Invalid endfor tag syntax.";
     assert_invalid_syntax("[ endfor ]", error);
     assert_invalid_syntax("[ endfor content extra ]", error);
+  }
+
+  #[test]
+  fn tokenize_content_handles_if_endif() {
+    let result = tokenize_content("[ if exists section.subsections ]\nSome text.\n[ endif ]").unwrap();
+    assert_eq!(
+      vec![
+        TemplateToken::If("exists section.subsections".to_string()),
+        TemplateToken::Text("\nSome text.\n".to_string()),
+        TemplateToken::EndIf
+      ],
+      result
+    );
+  }
+
+  #[test]
+  fn tokenize_content_fails_if_if_syntax_is_invalid() {
+    let error = "Invalid if tag syntax.";
+    assert_invalid_syntax("[ if ]", error);
+  }
+
+  #[test]
+  fn tokenize_content_fails_if_endif_syntax_is_invalid() {
+    let error = "Invalid endif tag syntax.";
+    assert_invalid_syntax("[ endif expression ]", error);
   }
 
   fn assert_invalid_syntax(input: &str, expected: &str) {
