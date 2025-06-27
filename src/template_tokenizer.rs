@@ -50,7 +50,7 @@ let mut tokens = Vec::new();
   }
 
  */
-fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Error>> {
+fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
   let mut tokens = Vec::new();
   let mut rest = input;
   while !rest.is_empty() {
@@ -70,7 +70,7 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
         rest = &rest[to+1..];
       }
       else {
-        return Err(error("Missing closing bracket."));
+        return Err("Missing closing bracket.".to_string());
       }
     }
     else {
@@ -84,7 +84,7 @@ fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, Box<dyn std::erro
   Ok(tokens)
 }
 
-fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
+fn parse_tag(input: &str) -> Result<TemplateToken, String> {
   let parts: Vec<&str> = input.split_whitespace().collect();
   let tag =
     if parts[0] == "for" {
@@ -99,27 +99,23 @@ fn parse_tag(input: &str) -> Result<TemplateToken, Box<dyn std::error::Error>> {
   Ok(tag)
 }
 
-fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, Box<dyn std::error::Error>> {
+fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
   if parts.len() == 4 {
     if parts[2] == "in" {
       Ok(TemplateToken::For(parts[1].to_string(), parts[3].to_string()))
     }
     else {
-      Err(error("Invalid for tag syntax. Missing 'in' keyword."))
+      Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
     }
   } else {
-    Err(error(
-      &format!(
+    Err(
+      format!(
         "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
         parts
       )
-    ))
+    )
   }
-}
-
-fn error(msg: &str) -> Box<dyn std::error::Error> {
-  Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, msg))
 }
 
 #[cfg(test)]
@@ -186,8 +182,8 @@ mod tests {
   }
 
   fn assert_invalid_for_syntax(input: &str) {
-    let result = super::tokenize_content(input).unwrap_err();
-    assert!(result.to_string().contains("Invalid for tag syntax."),
-      "Expected error for input '{}', got: {}", input, result);
+    let err = super::tokenize_content(input).unwrap_err();
+    assert!(err.contains("Invalid for tag syntax."),
+      "Expected error for input '{}', got: {}", input, err);
   }
 }
