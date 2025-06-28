@@ -7,7 +7,7 @@ pub struct TemplateTree {
 #[derive(Debug, PartialEq)]
 pub enum TemplateNode {
   Seq(Vec<Box<TemplateNode>>),
-  Text(String),
+  Text(String), // TODO: replace with string slice with lifetime
   Var(String),
   ForEach (String, String, Box<TemplateNode>),
   If (String, Box<TemplateNode>)
@@ -52,7 +52,18 @@ fn parse_nodes(input: &str) -> Result<Vec<Box<TemplateNode>>, Box<dyn Error>> {
 fn parse_tree(input: &str) -> Result<TemplateTree, Box<dyn std::error::Error>> {
   Ok(
     TemplateTree {
-      root: TemplateNode::Text("Hello, World!".to_string())
+      root: TemplateNode::Seq(Vec::new())
     }
   )
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn parse_tree_handles_empty_input() {
+    let result = parse_tree("").unwrap();
+    assert_eq!(result.root, TemplateNode::Seq(Vec::new()));
+  }
 }
