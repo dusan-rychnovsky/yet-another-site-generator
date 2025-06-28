@@ -1,6 +1,7 @@
 use crate::template_tokenizer::{self, TemplateToken};
 use std::fs;
 
+#[derive(Debug, PartialEq)]
 pub struct TemplateTree {
   pub root: TemplateNode
 }
@@ -191,5 +192,28 @@ mod tests {
         ]
       )
     );
+  }
+
+  #[test]
+  fn parse_tree_nested_foreach_with_incorrect_closing_order_fails() {
+    let input = "[for section in sections]
+      <ul>
+        [for link in section.links]
+          <li>
+            Link: [link.href]
+          </li>
+        [endfor section]
+      </ul>
+    [endfor link]";
+    assert_invalid_syntax(
+      input,
+      "Parsing error: Unexpected token EndFor(\"section\"). Nested in Foreach(\"link\", \"section.links\")."
+    );
+  }
+
+  fn assert_invalid_syntax(input: &str, expected: &str) {
+    let err = parse_tree(input).unwrap_err();
+    assert!(err.contains(expected),
+      "Expected error for input '{}', got: {}", input, err);
   }
 }

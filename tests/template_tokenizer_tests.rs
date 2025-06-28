@@ -53,6 +53,6 @@ fn assert_token_text(token: &TemplateToken, expected_start: &str, expected_end: 
       assert!(s.starts_with(expected_start), "unexpected text: '{}'", s);
       assert!(s.ends_with(expected_end), "unexpected text: '{}'", s);
     }
-    other => panic!("unexpected toekn: {:?}", other),
+    other => panic!("unexpected token: {:?}", other),
   }
 }
