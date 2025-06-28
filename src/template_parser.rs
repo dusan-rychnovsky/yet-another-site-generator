@@ -53,26 +53,43 @@ fn parse_nodes(input: &str) -> Result<Vec<Box<TemplateNode>>, Box<dyn Error>> {
 fn parse_tree(input: &str) -> Result<TemplateTree, String> {
   let tokens = template_tokenizer::tokenize_content(input)
     .map_err(|e| format!("Failed to tokenize template: {}", e))?;
+  let (nodes, _) = parse_nodes(&tokens, 0)?;
+  Ok(TemplateTree {
+    root: TemplateNode::Seq(nodes),
+  })
+}
 
-  let mut seq: Vec<Box<TemplateNode>> = Vec::new();
-  for token in tokens {
+fn parse_nodes(tokens: &[TemplateToken], start_pos: usize) -> Result<(Vec<Box<TemplateNode>>, usize), String> {
+  let mut nodes = Vec::new();
+  let mut pos = start_pos;
+  while pos < tokens.len() {
+    let token = &tokens[pos];
+    pos += 1;
     match token {
       TemplateToken::Text(text) => {
-        seq.push(Box::new(TemplateNode::Text(text)));
-      },
+        nodes.push(Box::new(TemplateNode::Text(text.clone())));
+      }
       TemplateToken::Var(var) => {
-        seq.push(Box::new(TemplateNode::Var(var)));
-      },
+        nodes.push(Box::new(TemplateNode::Var(var.clone())));
+      }
+      TemplateToken::For(var, expr) => {
+        let (body, new_start_pos) = parse_nodes(tokens, pos)?;
+        nodes.push(Box::new(TemplateNode::ForEach(
+          var.clone(),
+          expr.clone(),
+          Box::new(TemplateNode::Seq(body))
+        )));
+        pos = new_start_pos;
+      }
+      TemplateToken::EndFor(_) => {
+        break;
+      }
       other => {
-        return Err(format!("Unexpected tokken: {:?}", other));
+        return Err(format!("Unexpected token: {:?}", other));
       }
     }
   }
-  Ok(
-    TemplateTree {
-      root: TemplateNode::Seq(seq)
-    }
-  )
+  Ok((nodes, pos))
 }
 
 #[cfg(test)]
@@ -112,6 +129,27 @@ mod tests {
           Box::new(TemplateNode::Text("! Welcome to ".to_string())),
           Box::new(TemplateNode::Var("place.address".to_string())),
           Box::new(TemplateNode::Text(".".to_string()))
+        ]
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tree_handles_foreach() {
+    let input = "[for section in sections] Section. Title: [section.title][endfor section]";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      TemplateNode::Seq(
+        vec![
+          Box::new(TemplateNode::ForEach(
+            "section".to_string(),
+            "sections".to_string(),
+            Box::new(TemplateNode::Seq(vec![
+              Box::new(TemplateNode::Text(" Section. Title: ".to_string())),
+              Box::new(TemplateNode::Var("section.title".to_string()))
+            ]))
+          ))
         ]
       )
     );
