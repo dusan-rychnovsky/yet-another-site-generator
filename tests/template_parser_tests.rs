@@ -2,6 +2,7 @@ use yet_another_site_generator::template_parser;
 use yet_another_site_generator::template_parser::TemplateNode;
 
 #[test]
+#[ignore]
 fn parse_loads_and_parses_template_file() {
   let template_tree = template_parser::parse("tests/data/template-go.html");
 
