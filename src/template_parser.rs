@@ -60,6 +60,9 @@ fn parse_tree(input: &str) -> Result<TemplateTree, String> {
       TemplateToken::Text(text) => {
         seq.push(Box::new(TemplateNode::Text(text)));
       },
+      TemplateToken::Var(var) => {
+        seq.push(Box::new(TemplateNode::Var(var)));
+      },
       other => {
         return Err(format!("Unexpected tokken: {:?}", other));
       }
@@ -91,6 +94,24 @@ mod tests {
       TemplateNode::Seq(
         vec![
           Box::new(TemplateNode::Text(input.to_string()))
+        ]
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tree_handles_text_with_variables() {
+    let input = "Hello, [name]! Welcome to [place.address].";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      TemplateNode::Seq(
+        vec![
+          Box::new(TemplateNode::Text("Hello, ".to_string())),
+          Box::new(TemplateNode::Var("name".to_string())),
+          Box::new(TemplateNode::Text("! Welcome to ".to_string())),
+          Box::new(TemplateNode::Var("place.address".to_string())),
+          Box::new(TemplateNode::Text(".".to_string()))
         ]
       )
     );
