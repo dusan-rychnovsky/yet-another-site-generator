@@ -1,5 +1,3 @@
-use crate::data_file_parser::parse;
-
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken {
   Text(String), // TODO: replace with string slice with lifetime
@@ -16,7 +14,7 @@ pub fn tokenize(path: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Er
   Ok(tokens)
 }
 
-fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
+pub fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
   let mut tokens = Vec::new();
   let mut rest = input;
   while !rest.is_empty() {

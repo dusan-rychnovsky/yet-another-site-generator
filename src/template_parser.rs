@@ -1,3 +1,4 @@
+use crate::template_tokenizer::{self, TemplateToken};
 use std::fs;
 
 pub struct TemplateTree {
@@ -49,10 +50,24 @@ fn parse_nodes(input: &str) -> Result<Vec<Box<TemplateNode>>, Box<dyn Error>> {
 }
 */
 
-fn parse_tree(input: &str) -> Result<TemplateTree, Box<dyn std::error::Error>> {
+fn parse_tree(input: &str) -> Result<TemplateTree, String> {
+  let tokens = template_tokenizer::tokenize_content(input)
+    .map_err(|e| format!("Failed to tokenize template: {}", e))?;
+
+  let mut seq: Vec<Box<TemplateNode>> = Vec::new();
+  for token in tokens {
+    match token {
+      TemplateToken::Text(text) => {
+        seq.push(Box::new(TemplateNode::Text(text)));
+      },
+      other => {
+        return Err(format!("Unexpected tokken: {:?}", other));
+      }
+    }
+  }
   Ok(
     TemplateTree {
-      root: TemplateNode::Seq(Vec::new())
+      root: TemplateNode::Seq(seq)
     }
   )
 }
@@ -65,5 +80,19 @@ mod tests {
   fn parse_tree_handles_empty_input() {
     let result = parse_tree("").unwrap();
     assert_eq!(result.root, TemplateNode::Seq(Vec::new()));
+  }
+
+  #[test]
+  fn parse_tree_handles_simple_text() {
+    let input = "This is a simple text.";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      TemplateNode::Seq(
+        vec![
+          Box::new(TemplateNode::Text(input.to_string()))
+        ]
+      )
+    );
   }
 }
