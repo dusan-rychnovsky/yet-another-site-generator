@@ -154,4 +154,42 @@ mod tests {
       )
     );
   }
+
+  #[test]
+  fn parse_tree_handles_nested_foreach() {
+    let input = "[for section in sections]
+      <ul>
+        [for link in section.links]
+          <li>
+            Link: [link.href]
+          </li>
+        [endfor link]
+      </ul>
+    [endfor section]";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      TemplateNode::Seq(
+        vec![
+          Box::new(TemplateNode::ForEach(
+            "section".to_string(),
+            "sections".to_string(),
+            Box::new(TemplateNode::Seq(vec![
+              Box::new(TemplateNode::Text("\n      <ul>\n        ".to_string())),
+              Box::new(TemplateNode::ForEach(
+                "link".to_string(),
+                "section.links".to_string(),
+                Box::new(TemplateNode::Seq(vec![
+                  Box::new(TemplateNode::Text("\n          <li>\n            Link: ".to_string())),
+                  Box::new(TemplateNode::Var("link.href".to_string())),
+                  Box::new(TemplateNode::Text("\n          </li>\n        ".to_string()))
+                ]))
+              )),
+              Box::new(TemplateNode::Text("\n      </ul>\n    ".to_string()))
+            ]))
+          ))
+        ]
+      )
+    );
+  }
 }
