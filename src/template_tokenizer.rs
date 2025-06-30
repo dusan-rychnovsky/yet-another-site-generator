@@ -118,12 +118,13 @@ fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use super::TemplateToken::*;
 
   #[test]
   fn tokenize_content_handles_text() {
     let result = tokenize_content("Hello, world!").unwrap();
     assert_eq!(
-      vec![TemplateToken::Text("Hello, world!".to_string())],
+      vec![Text("Hello, world!".to_string())],
       result
     );
   }
@@ -132,7 +133,7 @@ mod tests {
   fn tokenize_content_handles_var() {
     let result = tokenize_content("[section.title]").unwrap();
     assert_eq!(
-      vec![TemplateToken::Var("section.title".to_string())],
+      vec![Var("section.title".to_string())],
       result
     );
   }
@@ -148,9 +149,9 @@ mod tests {
     let result = tokenize_content("Hello, [section.title]!").unwrap();
     assert_eq!(
       vec![
-        TemplateToken::Text("Hello, ".to_string()),
-        TemplateToken::Var("section.title".to_string()),
-        TemplateToken::Text("!".to_string())
+        Text("Hello, ".to_string()),
+        Var("section.title".to_string()),
+        Text("!".to_string())
       ],
       result
     );
@@ -158,12 +159,15 @@ mod tests {
 
   #[test]
   fn tokenize_content_handles_for_endfor() {
-    let result = tokenize_content("[ for content in section.content ]\nSome text.\n[ endfor content ]").unwrap();
+    let result = tokenize_content("\
+[ for content in section.content ]
+  Some text.
+[ endfor content ]").unwrap();
     assert_eq!(
       vec![
-        TemplateToken::For("content".to_string(), "section.content".to_string()),
-        TemplateToken::Text("\nSome text.\n".to_string()),
-        TemplateToken::EndFor("content".to_string())
+        For("content".to_string(), "section.content".to_string()),
+        Text("\n  Some text.\n".to_string()),
+        EndFor("content".to_string())
       ],
       result
     );
@@ -188,12 +192,15 @@ mod tests {
 
   #[test]
   fn tokenize_content_handles_if_endif() {
-    let result = tokenize_content("[ if exists section.subsections ]\nSome text.\n[ endif ]").unwrap();
+    let result = tokenize_content("\
+[ if exists section.subsections ]
+  Some text.
+[ endif ]").unwrap();
     assert_eq!(
       vec![
-        TemplateToken::If("exists section.subsections".to_string()),
-        TemplateToken::Text("\nSome text.\n".to_string()),
-        TemplateToken::EndIf
+        If("exists section.subsections".to_string()),
+        Text("\n  Some text.\n".to_string()),
+        EndIf
       ],
       result
     );
