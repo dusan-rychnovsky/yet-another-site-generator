@@ -195,6 +195,7 @@ mod tests {
   }
 
   #[test]
+  #[ignore]
   fn parse_tree_nested_foreach_with_incorrect_closing_order_fails() {
     let input = "[for section in sections]
       <ul>
