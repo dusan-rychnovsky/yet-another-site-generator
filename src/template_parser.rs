@@ -108,7 +108,10 @@ mod tests {
 
   #[test]
   fn parse_tree_handles_foreach() {
-    let input = "[for section in sections] Section. Title: [section.title][endfor section]";
+    let input = "\
+[for section in sections]
+  Section. Title: [section.title]
+[endfor section]";
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
@@ -118,8 +121,9 @@ mod tests {
             "section".to_string(),
             "sections".to_string(),
             Box::new(Seq(vec![
-              Box::new(Text(" Section. Title: ".to_string())),
-              Box::new(Var("section.title".to_string()))
+              Box::new(Text("\n  Section. Title: ".to_string())),
+              Box::new(Var("section.title".to_string())),
+              Box::new(Text("\n".to_string()))
             ]))
           ))
         ]
@@ -129,15 +133,16 @@ mod tests {
 
   #[test]
   fn parse_tree_handles_nested_foreach() {
-    let input = "[for section in sections]
-      <ul>
-        [for link in section.links]
-          <li>
-            Link: [link.href]
-          </li>
-        [endfor link]
-      </ul>
-    [endfor section]";
+    let input = "\
+[for section in sections]
+  <ul>
+    [for link in section.links]
+      <li>
+        Link: [link.href]
+      </li>
+    [endfor link]
+  </ul>
+[endfor section]";
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
@@ -147,17 +152,17 @@ mod tests {
             "section".to_string(),
             "sections".to_string(),
             Box::new(Seq(vec![
-              Box::new(Text("\n      <ul>\n        ".to_string())),
+              Box::new(Text("\n  <ul>\n    ".to_string())),
               Box::new(ForEach(
                 "link".to_string(),
                 "section.links".to_string(),
                 Box::new(Seq(vec![
-                  Box::new(Text("\n          <li>\n            Link: ".to_string())),
+                  Box::new(Text("\n      <li>\n        Link: ".to_string())),
                   Box::new(Var("link.href".to_string())),
-                  Box::new(Text("\n          </li>\n        ".to_string()))
+                  Box::new(Text("\n      </li>\n    ".to_string()))
                 ]))
               )),
-              Box::new(Text("\n      </ul>\n    ".to_string()))
+              Box::new(Text("\n  </ul>\n".to_string()))
             ]))
           ))
         ]
