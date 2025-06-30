@@ -21,36 +21,6 @@ pub fn parse(path: &str) -> Result<TemplateTree, Box<dyn std::error::Error>> {
   Ok(tree)
 }
 
-/*
-// This is a stub. You'd want to implement a real parser here.
-fn parse_nodes(input: &str) -> Result<Vec<Box<TemplateNode>>, Box<dyn Error>> {
-  let mut nodes = Vec::new();
-  let mut rest = input;
-
-  while !rest.is_empty() {
-    if let Some(start) = rest.find("{{") {
-      // Text before variable
-      if start > 0 {
-        nodes.push(Box::new(TemplateNode::Text(rest[..start].to_string())));
-      }
-      if let Some(end) = rest.find("}}") {
-        let var = rest[start + 2..end].trim().to_string();
-        nodes.push(Box::new(TemplateNode::Var(var)));
-        rest = &rest[end + 2..];
-      } else {
-        break; // Malformed template
-      }
-    } else {
-      // All remaining is text
-      nodes.push(Box::new(TemplateNode::Text(rest.to_string())));
-      break;
-    }
-  }
-
-  Ok(nodes)
-}
-*/
-
 fn parse_tree(input: &str) -> Result<TemplateTree, String> {
   let tokens = template_tokenizer::tokenize_content(input)
     .map_err(|e| format!("Failed to tokenize template: {}", e))?;
@@ -96,11 +66,12 @@ fn parse_nodes(tokens: &[TemplateToken], start_pos: usize) -> Result<(Vec<Box<Te
 #[cfg(test)]
 mod tests {
   use super::*;
+  use super::TemplateNode::*;
 
   #[test]
   fn parse_tree_handles_empty_input() {
     let result = parse_tree("").unwrap();
-    assert_eq!(result.root, TemplateNode::Seq(Vec::new()));
+    assert_eq!(result.root, Seq(Vec::new()));
   }
 
   #[test]
@@ -109,9 +80,9 @@ mod tests {
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
-      TemplateNode::Seq(
+      Seq(
         vec![
-          Box::new(TemplateNode::Text(input.to_string()))
+          Box::new(Text(input.to_string()))
         ]
       )
     );
@@ -123,13 +94,13 @@ mod tests {
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
-      TemplateNode::Seq(
+      Seq(
         vec![
-          Box::new(TemplateNode::Text("Hello, ".to_string())),
-          Box::new(TemplateNode::Var("name".to_string())),
-          Box::new(TemplateNode::Text("! Welcome to ".to_string())),
-          Box::new(TemplateNode::Var("place.address".to_string())),
-          Box::new(TemplateNode::Text(".".to_string()))
+          Box::new(Text("Hello, ".to_string())),
+          Box::new(Var("name".to_string())),
+          Box::new(Text("! Welcome to ".to_string())),
+          Box::new(Var("place.address".to_string())),
+          Box::new(Text(".".to_string()))
         ]
       )
     );
@@ -141,14 +112,14 @@ mod tests {
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
-      TemplateNode::Seq(
+      Seq(
         vec![
-          Box::new(TemplateNode::ForEach(
+          Box::new(ForEach(
             "section".to_string(),
             "sections".to_string(),
-            Box::new(TemplateNode::Seq(vec![
-              Box::new(TemplateNode::Text(" Section. Title: ".to_string())),
-              Box::new(TemplateNode::Var("section.title".to_string()))
+            Box::new(Seq(vec![
+              Box::new(Text(" Section. Title: ".to_string())),
+              Box::new(Var("section.title".to_string()))
             ]))
           ))
         ]
@@ -170,23 +141,23 @@ mod tests {
     let result = parse_tree(input).unwrap();
     assert_eq!(
       result.root,
-      TemplateNode::Seq(
+      Seq(
         vec![
-          Box::new(TemplateNode::ForEach(
+          Box::new(ForEach(
             "section".to_string(),
             "sections".to_string(),
-            Box::new(TemplateNode::Seq(vec![
-              Box::new(TemplateNode::Text("\n      <ul>\n        ".to_string())),
-              Box::new(TemplateNode::ForEach(
+            Box::new(Seq(vec![
+              Box::new(Text("\n      <ul>\n        ".to_string())),
+              Box::new(ForEach(
                 "link".to_string(),
                 "section.links".to_string(),
-                Box::new(TemplateNode::Seq(vec![
-                  Box::new(TemplateNode::Text("\n          <li>\n            Link: ".to_string())),
-                  Box::new(TemplateNode::Var("link.href".to_string())),
-                  Box::new(TemplateNode::Text("\n          </li>\n        ".to_string()))
+                Box::new(Seq(vec![
+                  Box::new(Text("\n          <li>\n            Link: ".to_string())),
+                  Box::new(Var("link.href".to_string())),
+                  Box::new(Text("\n          </li>\n        ".to_string()))
                 ]))
               )),
-              Box::new(TemplateNode::Text("\n      </ul>\n    ".to_string()))
+              Box::new(Text("\n      </ul>\n    ".to_string()))
             ]))
           ))
         ]
