@@ -65,9 +65,24 @@ fn parse_nodes(tokens: &[TemplateToken], start_pos: usize, context: Option<&Temp
           _ => ()
         };
         return Err(format!("Unexpected token EndFor(\"{}\") nested in {:?}.", var, context));
+      },
+      TemplateToken::If(cond) => {
+        let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
+        nodes.push(Box::new(TemplateNode::If(
+          cond.clone(),
+          Box::new(TemplateNode::Seq(body))
+        )));
+        pos = new_start_pos;
       }
-      other => {
-        return Err(format!("Unexpected token: {:?}", other));
+      TemplateToken::EndIf => {
+        match context {
+          Some(TemplateToken::If(_)) => {
+            break;
+          },
+          _ => {
+            return Err(format!("Unexpected token EndIf nested in {:?}.", context));
+          }
+        }
       }
     }
   }
@@ -199,11 +214,91 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_unexpected_endfor_fails() {
+  fn parse_tree_endfor_without_for_fails() {
     let input = "[endfor section]";
     assert_invalid_syntax(input, "Unexpected token EndFor(\"section\") nested in None.");
   }
-  
+
+  #[test]
+  fn parse_tree_handles_if_statements() {
+    let input = "\
+[if exists section.subsections]
+  Subsections exist.
+[endif]";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      Seq(
+        vec![
+          Box::new(If(
+            "exists section.subsections".to_string(),
+            Box::new(Seq(vec![
+              Box::new(Text("\n  Subsections exist.\n".to_string()))
+            ]))
+          ))
+        ]
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tree_handles_foreach_nested_in_if() {
+    let input = "\
+[if exists section.subsections]
+  <ul>
+    [for subsection in section.subsections]
+      <li>Subsection: [subsection.title]</li>
+    [endfor subsection]
+  </ul>
+[endif]";
+    let result = parse_tree(input).unwrap();
+    assert_eq!(
+      result.root,
+      Seq(
+        vec![
+          Box::new(If(
+            "exists section.subsections".to_string(),
+            Box::new(Seq(vec![
+              Box::new(Text("\n  <ul>\n    ".to_string())),
+              Box::new(ForEach(
+                "subsection".to_string(),
+                "section.subsections".to_string(),
+                Box::new(Seq(vec![
+                  Box::new(Text("\n      <li>Subsection: ".to_string())),
+                  Box::new(Var("subsection.title".to_string())),
+                  Box::new(Text("</li>\n    ".to_string()))
+                ]))
+              )),
+              Box::new(Text("\n  </ul>\n".to_string()))
+            ]))
+          ))
+        ]
+      )
+    );
+  } 
+
+  #[test]
+  fn parse_tree_with_incorrect_if_and_foreach_nesting_fails() {
+    let input = "\
+[if exists section.subsections]
+  <ul>
+    [for subsection in section.subsections]
+      <li>Subsection: [subsection.title]</li>
+    [endif]
+  </ul>
+[endfor subsection]";
+    assert_invalid_syntax(
+      input,
+      "Unexpected token EndIf nested in Some(For(\"subsection\", \"section.subsections\"))."
+    );
+  }
+
+  #[test]
+  fn parse_tree_endif_without_if_fails() {
+    let input = "[endif]";
+    assert_invalid_syntax(input, "Unexpected token EndIf nested in None.");
+  }
+
   fn assert_invalid_syntax(input: &str, expected: &str) {
     let err = parse_tree(input).unwrap_err();
     assert!(err.contains(expected),
