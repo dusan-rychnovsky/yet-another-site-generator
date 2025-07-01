@@ -1,4 +1,5 @@
 use crate::template_tokenizer::{self, TemplateToken};
+use std::option::Option::{self, Some, None};
 use std::fs;
 
 #[derive(Debug, PartialEq)]
@@ -24,13 +25,15 @@ pub fn parse(path: &str) -> Result<TemplateTree, Box<dyn std::error::Error>> {
 fn parse_tree(input: &str) -> Result<TemplateTree, String> {
   let tokens = template_tokenizer::tokenize_content(input)
     .map_err(|e| format!("Failed to tokenize template: {}", e))?;
-  let (nodes, _) = parse_nodes(&tokens, 0)?;
+  let (nodes, _) = parse_nodes(&tokens, 0, None)?;
   Ok(TemplateTree {
     root: TemplateNode::Seq(nodes),
   })
 }
 
-fn parse_nodes(tokens: &[TemplateToken], start_pos: usize) -> Result<(Vec<Box<TemplateNode>>, usize), String> {
+fn parse_nodes(tokens: &[TemplateToken], start_pos: usize, context: Option<&TemplateToken>)
+  -> Result<(Vec<Box<TemplateNode>>, usize), String> {
+
   let mut nodes = Vec::new();
   let mut pos = start_pos;
   while pos < tokens.len() {
@@ -44,7 +47,7 @@ fn parse_nodes(tokens: &[TemplateToken], start_pos: usize) -> Result<(Vec<Box<Te
         nodes.push(Box::new(TemplateNode::Var(var.clone())));
       }
       TemplateToken::For(var, expr) => {
-        let (body, new_start_pos) = parse_nodes(tokens, pos)?;
+        let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
         nodes.push(Box::new(TemplateNode::ForEach(
           var.clone(),
           expr.clone(),
@@ -52,8 +55,16 @@ fn parse_nodes(tokens: &[TemplateToken], start_pos: usize) -> Result<(Vec<Box<Te
         )));
         pos = new_start_pos;
       }
-      TemplateToken::EndFor(_) => {
-        break;
+      TemplateToken::EndFor(var) => {
+        match context {
+          Some(TemplateToken::For(ctx_var, _)) => {
+            if ctx_var == var {
+              break;
+            }
+          },
+          _ => ()
+        };
+        return Err(format!("Unexpected token EndFor(\"{}\") nested in {:?}.", var, context));
       }
       other => {
         return Err(format!("Unexpected token: {:?}", other));
@@ -171,7 +182,6 @@ mod tests {
   }
 
   #[test]
-  #[ignore]
   fn parse_tree_nested_foreach_with_incorrect_closing_order_fails() {
     let input = "[for section in sections]
       <ul>
@@ -184,10 +194,16 @@ mod tests {
     [endfor link]";
     assert_invalid_syntax(
       input,
-      "Parsing error: Unexpected token EndFor(\"section\"). Nested in Foreach(\"link\", \"section.links\")."
+      "Unexpected token EndFor(\"section\") nested in Some(For(\"link\", \"section.links\"))."
     );
   }
 
+  #[test]
+  fn parse_tree_unexpected_endfor_fails() {
+    let input = "[endfor section]";
+    assert_invalid_syntax(input, "Unexpected token EndFor(\"section\") nested in None.");
+  }
+  
   fn assert_invalid_syntax(input: &str, expected: &str) {
     let err = parse_tree(input).unwrap_err();
     assert!(err.contains(expected),
