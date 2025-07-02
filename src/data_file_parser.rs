@@ -1,47 +1,45 @@
 use std::fs;
-use serde::Deserialize;
 use serde_yaml;
 
-#[derive (Debug, Deserialize)]
-pub struct PageData {
-  pub title: String,
-  pub crumbs: Vec<CrumbData>,
-  pub sections: Vec<SectionData>
-}
-
-#[derive (Debug, Deserialize)]
-pub struct CrumbData {
-  pub text: String,
-  pub href: Option<String>
-}
-
-#[derive (Debug, Deserialize)]
-pub struct SectionData {
-  pub title: String,
-  pub labels: String,
-  pub img: String,
-  pub content: Vec<String>,
-  #[serde(default)]
-  pub subsections: Vec<SubSectionData>,
-  pub links: Vec<LinkData>
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SubSectionData {
-  pub title: String,
-  pub content: String
-}
-
-#[derive (Debug, Deserialize)]
-pub struct LinkData {
-  pub kind: String,
-  pub text: String,
-  pub href: String
-}
-
-pub fn parse(path: &str) -> Result<PageData, Box<dyn std::error::Error>> {
+pub fn parse(path: &str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
   let content = fs::read_to_string(path)?;
-  let doc: serde_yaml::Value = serde_yaml::from_str(&content)?;
-  let page_data: PageData = serde_yaml::from_value(doc["page"].clone())?;
-  Ok(page_data)
+  parse_content(&content)
+}
+
+fn parse_content(input :&str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
+  let doc: serde_yaml::Value = serde_yaml::from_str(input)?;
+  Ok(doc)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn parse_content_handles_simple_data_file() {
+    let content = "\
+page:
+  title: Hra Go
+  crumbs:
+    - href: \"/\"
+      text: Domů
+    - text: Zdroje
+    - text: Go
+  sections:
+    - title: Go klub Můstek
+      labels: CZ. Klub.
+    - title: Go Magic
+      labels: ENG. YouTube.
+";
+    let result = parse_content(content);
+    assert!(result.is_ok(), "Expected to parse content successfully. Error: {:?}", result.err());
+
+    let doc = result.unwrap();
+    assert_eq!(doc["page"]["title"], "Hra Go");
+    assert_eq!(doc["page"]["crumbs"][0]["text"], "Domů");
+    assert_eq!(doc["page"]["sections"][0]["title"], "Go klub Můstek");
+    assert_eq!(doc["page"]["sections"][0]["labels"], "CZ. Klub.");
+    assert_eq!(doc["page"]["sections"][1]["title"], "Go Magic");
+    assert_eq!(doc["page"]["sections"][1]["labels"], "ENG. YouTube.");
+  }
 }
