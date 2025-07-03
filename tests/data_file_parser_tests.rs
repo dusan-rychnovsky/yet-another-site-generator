@@ -6,7 +6,7 @@ fn parse_loads_and_parses_data_file() {
   let page_data = data_file_parser::parse("tests/data/data-go.yml");
 
   assert!(page_data.is_ok(), "Expected to parse data file successfully. Error: {:?}", page_data.err());
-  let page_data = page_data.unwrap();
+  let page_data = page_data.unwrap().data;
 
   let page_data = &page_data["page"];
 

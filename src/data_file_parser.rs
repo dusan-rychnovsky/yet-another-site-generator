@@ -1,14 +1,18 @@
 use std::fs;
 use serde_yaml;
 
-pub fn parse(path: &str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
+pub struct DataSet {
+  pub data: serde_yaml::Value,
+}
+
+pub fn parse(path: &str) -> Result<DataSet, Box<dyn std::error::Error>> {
   let content = fs::read_to_string(path)?;
   parse_content(&content)
 }
 
-fn parse_content(input :&str) -> Result<serde_yaml::Value, Box<dyn std::error::Error>> {
-  let doc: serde_yaml::Value = serde_yaml::from_str(input)?;
-  Ok(doc)
+fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
+  let value: serde_yaml::Value = serde_yaml::from_str(input)?;
+  Ok(DataSet { data: value })
 }
 
 #[cfg(test)]
@@ -34,7 +38,7 @@ page:
     let result = parse_content(content);
     assert!(result.is_ok(), "Expected to parse content successfully. Error: {:?}", result.err());
 
-    let doc = result.unwrap();
+    let doc = result.unwrap().data;
     assert_eq!(doc["page"]["title"], "Hra Go");
     assert_eq!(doc["page"]["crumbs"][0]["text"], "Domů");
     assert_eq!(doc["page"]["sections"][0]["title"], "Go klub Můstek");

@@ -1,12 +1,12 @@
 use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
+use crate::data_file_parser::DataSet;
 use crate::expressions::Path;
-use serde_yaml;
 
-pub fn visit(tree: &TemplateTree, data: &serde_yaml::Value) -> Result<String, String> {
+pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
   visit_node(&tree.root, data)
 }
 
-fn visit_node(node: &TemplateNode, data: &serde_yaml::Value) -> Result<String, String> {
+fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
   match node {
     Seq(nodes) => {
       let mut output = String::new();
@@ -17,7 +17,7 @@ fn visit_node(node: &TemplateNode, data: &serde_yaml::Value) -> Result<String, S
       Ok(output)
     },
     Var(path) => {
-      match data.get(path.segments[0]) {
+      match data.data.get(path.segments[0]) {
         Some(value) => {
           match value.as_str() {
             Some(s) => Ok(s.to_string()),
@@ -44,7 +44,7 @@ mod tests {
 
   #[test]
   fn visit_simple_text() {
-    let data = serde_yaml::Value::Null;
+    let data = DataSet { data: serde_yaml::Value::Null };
     let tree = TemplateTree {
       root: Text("Hello, world!"),
     };
@@ -54,11 +54,13 @@ mod tests {
 
   #[test]
   fn visit_var_with_simple_path() {
-    let data = serde_yaml::Value::Mapping(
-      serde_yaml::Mapping::from_iter(vec![
-        (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::String("Julia".to_string())),
-      ])
-    );
+    let data = DataSet {
+      data: serde_yaml::Value::Mapping(
+        serde_yaml::Mapping::from_iter(vec![
+          (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::String("Julia".to_string())),
+        ])
+      )
+    };
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -72,7 +74,7 @@ mod tests {
 
   #[test]
   fn visit_var_fails_if_data_entry_doesnt_exist() {
-    let data = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
+    let data = DataSet { data: serde_yaml::Value::Mapping(serde_yaml::Mapping::new()) };
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -86,16 +88,18 @@ mod tests {
 
   #[test]
   fn visit_var_fails_if_data_entry_isnt_string() {
-    let data = serde_yaml::Value::Mapping(
-      serde_yaml::Mapping::from_iter(vec![
-        (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::Mapping(
-          serde_yaml::Mapping::from_iter(vec![
-            (serde_yaml::Value::String("first".to_string()), serde_yaml::Value::String("Julia".to_string())),
-            (serde_yaml::Value::String("last".to_string()), serde_yaml::Value::String("Doe".to_string())),
-          ])
-        )),
-      ])
-    );
+    let data = DataSet {
+      data: serde_yaml::Value::Mapping(
+        serde_yaml::Mapping::from_iter(vec![
+          (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::Mapping(
+            serde_yaml::Mapping::from_iter(vec![
+              (serde_yaml::Value::String("first".to_string()), serde_yaml::Value::String("Julia".to_string())),
+              (serde_yaml::Value::String("last".to_string()), serde_yaml::Value::String("Doe".to_string())),
+            ])
+          )),
+        ])
+      )
+    };
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
