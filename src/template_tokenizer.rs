@@ -13,6 +13,14 @@ pub struct Path<'a> {
   pub segments: Vec<&'a str>
 }
 
+impl<'a> Path<'a> {
+  pub fn parse(input: &'a str) -> Self {
+    Path {
+      segments: input.split('.').collect()
+    }
+  }
+}
+
 pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
   let mut tokens = Vec::new();
   let mut rest = input;
@@ -64,11 +72,8 @@ fn parse_tag<'a>(input: &'a str) -> Result<TemplateToken<'a>, String> {
 
 fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
   if parts.len() == 1 {
-    let segments = parts[0].split('.').collect::<Vec<&str>>();
     Ok(TemplateToken::Var(
-      Path {
-        segments: segments
-      }
+      Path::parse(parts[0])
     ))
   }
   else {
