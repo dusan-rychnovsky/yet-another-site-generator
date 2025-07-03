@@ -23,7 +23,7 @@ fn tokenize_template_go_html() {
       "</title>\n  <link ",
       "<ol class=\"breadcrumb mb-0\">\n        "
     );
-    assert_eq!(For("crumb", "crumbs"), tokens[3]);
+    assert_eq!(For("crumb", Path { segments: vec!["crumbs"] },), tokens[3]);
     assert_eq!(Text("\n          <li class=\"breadcrumb-item\"><a href=\""), tokens[4]);
     assert_eq!(Var(Path { segments: vec!["crumb", "href"] }), tokens[5]);
     assert_eq!(Text("\">"), tokens[6]);
@@ -33,7 +33,7 @@ fn tokenize_template_go_html() {
     // ...
     assert_eq!(If(vec!["exists", "section.subsections"]), tokens[29]);
     assert_eq!(Text("\n                  <ul>\n                    "), tokens[30]);
-    assert_eq!(For("subsection", "section.subsections"), tokens[31]);
+    assert_eq!(For("subsection", Path { segments: vec!["section", "subsections"] },), tokens[31]);
     assert_eq!(Text("\n                      <li class=\"mb-1\">\n                        <em>"), tokens[32]);
     assert_eq!(Var(Path { segments: vec!["subsection", "title"] }), tokens[33]);
     assert_eq!(Text("</em> - "), tokens[34]);

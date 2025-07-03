@@ -11,7 +11,7 @@ pub enum TemplateNode<'a> {
   Seq(Vec<Box<TemplateNode<'a>>>),
   Text(&'a str),
   Var(Path<'a>),
-  ForEach (&'a str, &'a str, Box<TemplateNode<'a>>),
+  ForEach (&'a str, Path<'a>, Box<TemplateNode<'a>>),
   If (Vec<&'a str>, Box<TemplateNode<'a>>)
 }
 
@@ -43,7 +43,7 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
         let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
         nodes.push(Box::new(TemplateNode::ForEach(
           var,
-          expr,
+          expr.clone(),
           Box::new(TemplateNode::Seq(body))
         )));
         pos = new_start_pos;
@@ -138,7 +138,7 @@ mod tests {
         vec![
           Box::new(ForEach(
             "section",
-            "sections",
+            Path { segments: vec!["sections"] },
             Box::new(Seq(vec![
               Box::new(Text("\n  Section. Title: ")),
               Box::new(Var(Path { segments: vec!["section", "title"] })),
@@ -169,12 +169,12 @@ mod tests {
         vec![
           Box::new(ForEach(
             "section",
-            "sections",
+            Path { segments: vec!["sections"] },
             Box::new(Seq(vec![
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "link",
-                "section.links",
+                Path { segments: vec!["section", "links"] },
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>\n        Link: ")),
                   Box::new(Var(Path { segments: vec!["link", "href"] })),
@@ -202,7 +202,7 @@ mod tests {
     [endfor link]";
     assert_invalid_syntax(
       input,
-      "Unexpected token EndFor(\"section\") nested in Some(For(\"link\", \"section.links\"))."
+      "Unexpected token EndFor(\"section\") nested in Some(For(\"link\", Path { segments: [\"section\", \"links\"] }))."
     );
   }
 
@@ -255,7 +255,7 @@ mod tests {
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "subsection",
-                "section.subsections",
+                Path { segments: vec!["section", "subsections"] },
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>Subsection: ")),
                   Box::new(Var(Path { segments: vec!["subsection", "title"] })),
@@ -282,7 +282,7 @@ mod tests {
 [endfor subsection]";
     assert_invalid_syntax(
       input,
-      "Unexpected token EndIf nested in Some(For(\"subsection\", \"section.subsections\"))."
+      "Unexpected token EndIf nested in Some(For(\"subsection\", Path { segments: [\"section\", \"subsections\"] }))."
     );
   }
 

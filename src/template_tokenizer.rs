@@ -2,7 +2,7 @@
 pub enum TemplateToken<'a> {
     Text(&'a str),
     Var(Path<'a>),
-    For(&'a str, &'a str),
+    For(&'a str, Path<'a>),
     EndFor(&'a str),
     If(Vec<&'a str>),
     EndIf,
@@ -105,7 +105,7 @@ fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
   if parts.len() == 4 {
     if parts[2] == "in" {
-      Ok(TemplateToken::For(parts[1], parts[3]))
+      Ok(TemplateToken::For(parts[1], Path::parse(parts[3])))
     }
     else {
       Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
@@ -210,7 +210,10 @@ mod tests {
 [ endfor content ]").unwrap();
     assert_eq!(
       vec![
-        For("content", "section.content"),
+        For(
+          "content",
+          Path { segments: vec!["section", "content"] }
+        ),
         Text("\n  Some text.\n"),
         EndFor("content")
       ],
