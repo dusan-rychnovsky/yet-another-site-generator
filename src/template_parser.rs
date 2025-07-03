@@ -1,4 +1,5 @@
-use crate::template_tokenizer::{self, TemplateToken, Path, Expr};
+use crate::template_tokenizer::{self, TemplateToken};
+use crate::expressions::{Path, Expr};
 use std::option::Option::{self, Some, None};
 
 #[derive(Debug, PartialEq)]
@@ -86,7 +87,7 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
 mod tests {
   use super::*;
   use super::TemplateNode::*;
-  use template_tokenizer::Predicate::*;
+  use crate::expressions::{Path, Expr, Predicate::*};
 
   #[test]
   fn parse_handles_empty_input() {

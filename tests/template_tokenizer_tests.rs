@@ -1,4 +1,5 @@
-use yet_another_site_generator::template_tokenizer::{self, TemplateToken, TemplateToken::*, Path, Expr, Predicate::*};
+use yet_another_site_generator::template_tokenizer::{self, TemplateToken, TemplateToken::*};
+use yet_another_site_generator::expressions::{Path, Expr, Predicate::*};
 use std::fs;
 
 #[test]

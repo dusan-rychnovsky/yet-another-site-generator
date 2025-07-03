@@ -1,3 +1,5 @@
+use crate::expressions::{Expr, Path};
+
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken<'a> {
   Text(&'a str),
@@ -6,6 +8,40 @@ pub enum TemplateToken<'a> {
   EndFor(&'a str),
   If(Expr<'a>),
   EndIf,
+}
+
+pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
+  let mut tokens = Vec::new();
+  let mut rest = input;
+  while !rest.is_empty() {
+    if let Some(from) = rest.find('[') {
+      if from > 0 {
+        let text = &rest[..from];
+        let text = TemplateToken::Text(text);
+        println!("text: {:?}", text);
+        tokens.push(text);
+      }
+      if let Some(to) = rest.find(']') {
+        let tag_input = &rest[from+1..to];
+        println!("tag input: '{}'", tag_input);
+        let tag = TemplateToken::parse_tag(tag_input)?;
+        println!("tag: {:?}", tag);
+        tokens.push(tag);
+        rest = &rest[to+1..];
+      }
+      else {
+        return Err("Missing closing bracket.".to_string());
+      }
+    }
+    else {
+      let text = rest;
+      let text = TemplateToken::Text(text);
+      println!("text: {:?}", text);
+      tokens.push(text);
+      break;
+    }
+  }
+  Ok(tokens)
 }
 
 impl<'a> TemplateToken<'a> {
@@ -88,86 +124,11 @@ impl<'a> TemplateToken<'a> {
   }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Path<'a> {
-  pub segments: Vec<&'a str>
-}
-
-impl<'a> Path<'a> {
-  pub fn parse(input: &'a str) -> Self {
-    Path {
-      segments: input.split('.').collect()
-    }
-  }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Expr<'a> {
-  pub predicate: Predicate,
-  pub path: Path<'a>,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Predicate {
-  Exists
-}
-
-impl<'a> Expr<'a> {
-  pub fn parse(parts: Vec<&'a str>) -> Result<Self, String> {
-    if parts.len() != 2 {
-      return Err(format!("Invalid expression syntax - expected a predicate and a path, got: '{:#?}'.", parts));
-    }
-    let predicate = match parts[0] {
-      "exists" => Predicate::Exists,
-      _ => return Err(format!("Unknown predicate: '{}'.", parts[0])),
-    };
-    let path = Path::parse(parts[1]);
-    Ok(Expr {
-      predicate,
-      path,
-    })
-  }
-}
-
-pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
-  let mut tokens = Vec::new();
-  let mut rest = input;
-  while !rest.is_empty() {
-    if let Some(from) = rest.find('[') {
-      if from > 0 {
-        let text = &rest[..from];
-        let text = TemplateToken::Text(text);
-        println!("text: {:?}", text);
-        tokens.push(text);
-      }
-      if let Some(to) = rest.find(']') {
-        let tag_input = &rest[from+1..to];
-        println!("tag input: '{}'", tag_input);
-        let tag = TemplateToken::parse_tag(tag_input)?;
-        println!("tag: {:?}", tag);
-        tokens.push(tag);
-        rest = &rest[to+1..];
-      }
-      else {
-        return Err("Missing closing bracket.".to_string());
-      }
-    }
-    else {
-      let text = rest;
-      let text = TemplateToken::Text(text);
-      println!("text: {:?}", text);
-      tokens.push(text);
-      break;
-    }
-  }
-  Ok(tokens)
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
   use super::TemplateToken::*;
-  use super::Predicate::*;
+  use crate::expressions::{Path, Expr, Predicate::*};
 
   #[test]
   fn tokenize_handles_text() {
