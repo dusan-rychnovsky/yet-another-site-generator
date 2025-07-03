@@ -1,17 +1,32 @@
 use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
+use crate::expressions::Path;
+use serde_yaml;
 
-pub fn visit(tree: &TemplateTree) -> String {
-  let mut output = String::new();
-  visit_node(&tree.root, &mut output);
-  output
+pub fn visit(tree: &TemplateTree, data: &serde_yaml::Value) -> Result<String, String> {
+  visit_node(&tree.root, data)
 }
 
-fn visit_node(node: &TemplateNode, output: &mut String) {
+fn visit_node(node: &TemplateNode, data: &serde_yaml::Value) -> Result<String, String> {
   match node {
-    Text(text) => {
-      output.push_str(text);
+    Seq(nodes) => {
+      let mut output = String::new();
+      for child in nodes {
+        let str = visit_node(child, data)?;
+        output.push_str(&str);
+      }
+      Ok(output)
     },
-    _ => ()
+    Var(path) => {
+      let output = match data.get(path.segments[0]) {
+        Some(value) => value.as_str().unwrap_or("").to_string(),
+        None => String::from(""),
+      };
+      Ok(output)
+    },
+    Text(text) => {
+      Ok(text.to_string())
+    },
+    _ => Ok(String::from("not implemented yet")),
   }
 }
 
@@ -21,10 +36,35 @@ mod tests {
 
   #[test]
   fn visit_simple_text() {
+    let data = serde_yaml::Value::Null;
     let tree = TemplateTree {
-      root: TemplateNode::Text("Hello, world!"),
+      root: Text("Hello, world!"),
     };
-    let result = visit(&tree);
-    assert_eq!(result, "Hello, world!");
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!("Hello, world!", result);
   }
+
+  #[test]
+  fn visit_var_with_simple_path() {
+    let data = serde_yaml::Value::Mapping(
+      serde_yaml::Mapping::from_iter(vec![
+        (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::String("Julia".to_string())),
+      ])
+    );
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(Text("Hello, ")),
+        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Text("!")),
+      ]),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "Hello, Julia!");
+  }
+
+  fn unwrap(result: Result<String, String>) -> String {
+    assert!(result.is_ok(), "Error visiting NodeTree: {:?}", result.err());
+    result.unwrap()
+  }
+
 }
