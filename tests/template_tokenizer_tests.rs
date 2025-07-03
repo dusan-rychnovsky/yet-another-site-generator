@@ -1,4 +1,4 @@
-use yet_another_site_generator::template_tokenizer::{self, TemplateToken, TemplateToken::*, Path};
+use yet_another_site_generator::template_tokenizer::{self, TemplateToken, TemplateToken::*, Path, Expr, Predicate::*};
 use std::fs;
 
 #[test]
@@ -31,7 +31,7 @@ fn tokenize_template_go_html() {
     assert_eq!(Text("</a></li>\n        "), tokens[8]);
     assert_eq!(EndFor("crumbs"), tokens[9]);
     // ...
-    assert_eq!(If(vec!["exists", "section.subsections"]), tokens[29]);
+    assert_eq!(If(Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } }), tokens[29]);
     assert_eq!(Text("\n                  <ul>\n                    "), tokens[30]);
     assert_eq!(For("subsection", Path { segments: vec!["section", "subsections"] },), tokens[31]);
     assert_eq!(Text("\n                      <li class=\"mb-1\">\n                        <em>"), tokens[32]);

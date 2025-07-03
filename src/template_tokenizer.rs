@@ -4,7 +4,7 @@ pub enum TemplateToken<'a> {
     Var(Path<'a>),
     For(&'a str, Path<'a>),
     EndFor(&'a str),
-    If(Vec<&'a str>),
+    If(Expr<'a>),
     EndIf,
 }
 
@@ -18,6 +18,34 @@ impl<'a> Path<'a> {
     Path {
       segments: input.split('.').collect()
     }
+  }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Expr<'a> {
+  pub predicate: Predicate,
+  pub path: Path<'a>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Predicate {
+  Exists
+}
+
+impl<'a> Expr<'a> {
+  pub fn parse(parts: Vec<&'a str>) -> Result<Self, String> {
+    if parts.len() != 2 {
+      return Err(format!("Invalid expression syntax - expected a predicate and a path, got: '{:#?}'.", parts));
+    }
+    let predicate = match parts[0] {
+      "exists" => Predicate::Exists,
+      _ => return Err(format!("Unknown predicate: '{}'.", parts[0])),
+    };
+    let path = Path::parse(parts[1]);
+    Ok(Expr {
+      predicate,
+      path,
+    })
   }
 }
 
@@ -93,12 +121,9 @@ fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
 
 fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
-  if parts.len() > 1 {
-    Ok(TemplateToken::If(parts[1..].to_vec()))
-  }
-  else {
-    Err("Invalid if tag syntax. Missing expression.".to_string())
-  }
+  let expr = Expr::parse(parts[1..].to_vec())
+    .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
+  Ok(TemplateToken::If(expr))
 }
 
 fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
@@ -140,6 +165,7 @@ fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
 mod tests {
   use super::*;
   use super::TemplateToken::*;
+  use super::Predicate::*;
 
   #[test]
   fn tokenize_handles_text() {
@@ -246,7 +272,7 @@ mod tests {
 [ endif ]").unwrap();
     assert_eq!(
       vec![
-        If(vec!["exists", "section.subsections"]),
+        If(Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } }),
         Text("\n  Some text.\n"),
         EndIf
       ],
@@ -256,7 +282,7 @@ mod tests {
 
   #[test]
   fn tokenize_if_requires_an_expression() {
-    assert_invalid_syntax("[ if ]", "Invalid if tag syntax.");
+    assert_invalid_syntax("[ if ]", "Invalid if tag syntax: Invalid expression syntax - expected a predicate and a path, got: '[]'.");
   }
 
   #[test]

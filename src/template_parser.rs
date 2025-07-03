@@ -1,4 +1,4 @@
-use crate::template_tokenizer::{self, TemplateToken, Path};
+use crate::template_tokenizer::{self, TemplateToken, Path, Expr};
 use std::option::Option::{self, Some, None};
 
 #[derive(Debug, PartialEq)]
@@ -12,7 +12,7 @@ pub enum TemplateNode<'a> {
   Text(&'a str),
   Var(Path<'a>),
   ForEach (&'a str, Path<'a>, Box<TemplateNode<'a>>),
-  If (Vec<&'a str>, Box<TemplateNode<'a>>)
+  If (Expr<'a>, Box<TemplateNode<'a>>)
 }
 
 pub fn parse<'a>(input: &'a str) -> Result<TemplateTree<'a>, String> {
@@ -86,6 +86,7 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
 mod tests {
   use super::*;
   use super::TemplateNode::*;
+  use template_tokenizer::Predicate::*;
 
   #[test]
   fn parse_handles_empty_input() {
@@ -224,7 +225,7 @@ mod tests {
       Seq(
         vec![
           Box::new(If(
-            vec!["exists", "section.subsections"],
+            Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } },
             Box::new(Seq(vec![
               Box::new(Text("\n  Subsections exist.\n"))
             ]))
@@ -250,7 +251,7 @@ mod tests {
       Seq(
         vec![
           Box::new(If(
-            vec!["exists", "section.subsections"],
+            Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } },
             Box::new(Seq(vec![
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
