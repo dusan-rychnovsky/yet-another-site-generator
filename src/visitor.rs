@@ -17,11 +17,19 @@ fn visit_node(node: &TemplateNode, data: &serde_yaml::Value) -> Result<String, S
       Ok(output)
     },
     Var(path) => {
-      let output = match data.get(path.segments[0]) {
-        Some(value) => value.as_str().unwrap_or("").to_string(),
-        None => String::from(""),
-      };
-      Ok(output)
+      match data.get(path.segments[0]) {
+        Some(value) => {
+          match value.as_str() {
+            Some(s) => Ok(s.to_string()),
+            None => Err(
+              format!("Var [{}] is not a string.", path.segments.join("."))
+            ),
+          }
+        },
+        None => Err(
+          format!("Var [{}] is not defined.", path.segments.join("."))
+        ),
+      }
     },
     Text(text) => {
       Ok(text.to_string())
@@ -73,7 +81,7 @@ mod tests {
       ]),
     };
     let err = visit(&tree, &data).unwrap_err();
-    assert!(!err.contains("Var [name] is not defined."));
+    assert!(err.contains("Var [name] is not defined."), "Got error: {}", err);
   }
 
   #[test]
@@ -96,7 +104,7 @@ mod tests {
       ]),
     };
     let err = visit(&tree, &data).unwrap_err();
-    assert!(!err.contains("Var [name] is not a string."));
+    assert!(err.contains("Var [name] is not a string."), "Got error: {}", err);
   }
 
   fn unwrap(result: Result<String, String>) -> String {
