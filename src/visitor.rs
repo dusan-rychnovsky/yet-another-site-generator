@@ -62,9 +62,45 @@ mod tests {
     assert_eq!(result, "Hello, Julia!");
   }
 
+  #[test]
+  fn visit_var_fails_if_data_entry_doesnt_exist() {
+    let data = serde_yaml::Value::Mapping(serde_yaml::Mapping::new());
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(Text("Hello, ")),
+        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Text("!")),
+      ]),
+    };
+    let err = visit(&tree, &data).unwrap_err();
+    assert!(!err.contains("Var [name] is not defined."));
+  }
+
+  #[test]
+  fn visit_var_fails_if_data_entry_isnt_string() {
+    let data = serde_yaml::Value::Mapping(
+      serde_yaml::Mapping::from_iter(vec![
+        (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::Mapping(
+          serde_yaml::Mapping::from_iter(vec![
+            (serde_yaml::Value::String("first".to_string()), serde_yaml::Value::String("Julia".to_string())),
+            (serde_yaml::Value::String("last".to_string()), serde_yaml::Value::String("Doe".to_string())),
+          ])
+        )),
+      ])
+    );
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(Text("Hello, ")),
+        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Text("!")),
+      ]),
+    };
+    let err = visit(&tree, &data).unwrap_err();
+    assert!(!err.contains("Var [name] is not a string."));
+  }
+
   fn unwrap(result: Result<String, String>) -> String {
     assert!(result.is_ok(), "Error visiting NodeTree: {:?}", result.err());
     result.unwrap()
   }
-
 }
