@@ -1,26 +1,20 @@
 #[derive(Debug, PartialEq)]
-pub enum TemplateToken {
-  Text(String), // TODO: replace with string slice with lifetime
-  Var(String),
-  For(String, String),
-  EndFor(String),
-  If(String),
-  EndIf
+pub enum TemplateToken<'a> {
+    Text(&'a str),
+    Var(&'a str),
+    For(&'a str, &'a str),
+    EndFor(&'a str),
+    If(Vec<&'a str>),
+    EndIf,
 }
 
-pub fn tokenize(path: &str) -> Result<Vec<TemplateToken>, Box<dyn std::error::Error>> {
-  let content = std::fs::read_to_string(path)?;
-  let tokens = tokenize_content(&content)?;
-  Ok(tokens)
-}
-
-pub fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
+pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
   let mut tokens = Vec::new();
   let mut rest = input;
   while !rest.is_empty() {
     if let Some(from) = rest.find('[') {
       if from > 0 {
-        let text = rest[..from].to_string();
+        let text = &rest[..from];
         let text = TemplateToken::Text(text);
         println!("text: {:?}", text);
         tokens.push(text);
@@ -38,7 +32,7 @@ pub fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
       }
     }
     else {
-      let text = rest.to_string();
+      let text = rest;
       let text = TemplateToken::Text(text);
       println!("text: {:?}", text);
       tokens.push(text);
@@ -48,14 +42,17 @@ pub fn tokenize_content(input: &str) -> Result<Vec<TemplateToken>, String> {
   Ok(tokens)
 }
 
-fn parse_tag(input: &str) -> Result<TemplateToken, String> {
+fn parse_tag<'a>(input: &'a str) -> Result<TemplateToken<'a>, String> {
   let parts: Vec<&str> = input.split_whitespace().collect();
+  if parts.is_empty() {
+    return Err("Tags cannot be empty.".to_string());
+  }
   let tag = match parts[0] {
     "for" => parse_for_tag(parts)?,
     "endfor" => parse_endfor_tag(parts)?,
     "if" => parse_if_tag(parts)?,
     "endif" => parse_endif_tag(parts)?,
-    _ => TemplateToken::Var(input.to_string()),
+    _ => TemplateToken::Var(input),
   };
   Ok(tag)
 }
@@ -73,7 +70,7 @@ fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
 fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
   if parts.len() > 1 {
-    Ok(TemplateToken::If(parts[1..].join(" ")))
+    Ok(TemplateToken::If(parts[1..].to_vec()))
   }
   else {
     Err("Invalid if tag syntax. Missing expression.".to_string())
@@ -84,7 +81,7 @@ fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
   if parts.len() == 4 {
     if parts[2] == "in" {
-      Ok(TemplateToken::For(parts[1].to_string(), parts[3].to_string()))
+      Ok(TemplateToken::For(parts[1], parts[3]))
     }
     else {
       Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
@@ -103,7 +100,7 @@ fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
 fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
   assert!(parts[0] == "endfor", "Expected 'endfor' tag, got: {}", parts[0]);
   if parts.len() == 2 {
-    Ok(TemplateToken::EndFor(parts[1].to_string()))
+    Ok(TemplateToken::EndFor(parts[1]))
   }
   else {
     Err(
@@ -121,60 +118,60 @@ mod tests {
   use super::TemplateToken::*;
 
   #[test]
-  fn tokenize_content_handles_text() {
-    let result = tokenize_content("Hello, world!").unwrap();
+  fn tokenize_handles_text() {
+    let result = tokenize("Hello, world!").unwrap();
     assert_eq!(
-      vec![Text("Hello, world!".to_string())],
+      vec![Text("Hello, world!")],
       result
     );
   }
 
   #[test]
-  fn tokenize_content_handles_var() {
-    let result = tokenize_content("[section.title]").unwrap();
+  fn tokenize_handles_var() {
+    let result = tokenize("[section.title]").unwrap();
     assert_eq!(
-      vec![Var("section.title".to_string())],
+      vec![Var("section.title")],
       result
     );
   }
 
   #[test]
-  fn tokenize_content_fails_if_no_closing_bracket() {
-    let result = tokenize_content("[section.title").unwrap_err();
+  fn tokenize_fails_if_no_closing_bracket() {
+    let result = tokenize("[section.title").unwrap_err();
     assert!(result.to_string().contains("Missing closing bracket."));
   }
 
   #[test]
-  fn tokenize_content_handles_mixed_text_and_var() {
-    let result = tokenize_content("Hello, [section.title]!").unwrap();
+  fn tokenize_handles_mixed_text_and_var() {
+    let result = tokenize("Hello, [section.title]!").unwrap();
     assert_eq!(
       vec![
-        Text("Hello, ".to_string()),
-        Var("section.title".to_string()),
-        Text("!".to_string())
+        Text("Hello, "),
+        Var("section.title"),
+        Text("!")
       ],
       result
     );
   }
 
   #[test]
-  fn tokenize_content_handles_for_endfor() {
-    let result = tokenize_content("\
+  fn tokenize_handles_for_endfor() {
+    let result = tokenize("\
 [ for content in section.content ]
   Some text.
 [ endfor content ]").unwrap();
     assert_eq!(
       vec![
-        For("content".to_string(), "section.content".to_string()),
-        Text("\n  Some text.\n".to_string()),
-        EndFor("content".to_string())
+        For("content", "section.content"),
+        Text("\n  Some text.\n"),
+        EndFor("content")
       ],
       result
     );
   }
 
   #[test]
-  fn tokenize_content_fails_if_for_syntax_is_invalid() {
+  fn tokenize_fails_if_for_syntax_is_invalid() {
     let error = "Invalid for tag syntax.";
     assert_invalid_syntax("[ for ]", error);
     assert_invalid_syntax("[ for section in ]", error);
@@ -184,22 +181,22 @@ mod tests {
   }
 
   #[test]
-  fn tokenize_content_fails_if_endfor_syntax_is_invalid() {
+  fn tokenize_fails_if_endfor_syntax_is_invalid() {
     let error = "Invalid endfor tag syntax.";
     assert_invalid_syntax("[ endfor ]", error);
     assert_invalid_syntax("[ endfor content extra ]", error);
   }
 
   #[test]
-  fn tokenize_content_handles_if_endif() {
-    let result = tokenize_content("\
+  fn tokenize_handles_if_endif() {
+    let result = tokenize("\
 [ if exists section.subsections ]
   Some text.
 [ endif ]").unwrap();
     assert_eq!(
       vec![
-        If("exists section.subsections".to_string()),
-        Text("\n  Some text.\n".to_string()),
+        If(vec!["exists", "section.subsections"]),
+        Text("\n  Some text.\n"),
         EndIf
       ],
       result
@@ -207,19 +204,22 @@ mod tests {
   }
 
   #[test]
-  fn tokenize_content_fails_if_if_syntax_is_invalid() {
-    let error = "Invalid if tag syntax.";
-    assert_invalid_syntax("[ if ]", error);
+  fn tokenize_if_requires_an_expression() {
+    assert_invalid_syntax("[ if ]", "Invalid if tag syntax.");
   }
 
   #[test]
-  fn tokenize_content_fails_if_endif_syntax_is_invalid() {
-    let error = "Invalid endif tag syntax.";
-    assert_invalid_syntax("[ endif expression ]", error);
+  fn tokenize_endif_doesnt_support_expressions() {
+    assert_invalid_syntax("[ endif expression ]", "Invalid endif tag syntax.");
+  }
+
+  #[test]
+  fn tokenize_doesnt_support_empty_tags() {
+    assert_invalid_syntax("[  ]", "Tags cannot be empty.");
   }
 
   fn assert_invalid_syntax(input: &str, expected: &str) {
-    let err = super::tokenize_content(input).unwrap_err();
+    let err = super::tokenize(input).unwrap_err();
     assert!(err.contains(expected),
       "Expected error for input '{}', got: {}", input, err);
   }

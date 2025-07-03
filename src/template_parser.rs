@@ -1,29 +1,22 @@
 use crate::template_tokenizer::{self, TemplateToken};
 use std::option::Option::{self, Some, None};
-use std::fs;
 
 #[derive(Debug, PartialEq)]
-pub struct TemplateTree {
-  pub root: TemplateNode
+pub struct TemplateTree<'a> {
+  pub root: TemplateNode<'a>
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TemplateNode {
-  Seq(Vec<Box<TemplateNode>>),
-  Text(String), // TODO: replace with string slice with lifetime
-  Var(String),
-  ForEach (String, String, Box<TemplateNode>),
-  If (String, Box<TemplateNode>)
+pub enum TemplateNode<'a> {
+  Seq(Vec<Box<TemplateNode<'a>>>),
+  Text(&'a str),
+  Var(&'a str),
+  ForEach (&'a str, &'a str, Box<TemplateNode<'a>>),
+  If (Vec<&'a str>, Box<TemplateNode<'a>>)
 }
 
-pub fn parse(path: &str) -> Result<TemplateTree, Box<dyn std::error::Error>> {
-  let content = fs::read_to_string(path)?;
-  let tree = parse_tree(&content)?;
-  Ok(tree)
-}
-
-fn parse_tree(input: &str) -> Result<TemplateTree, String> {
-  let tokens = template_tokenizer::tokenize_content(input)
+pub fn parse<'a>(input: &'a str) -> Result<TemplateTree<'a>, String> {
+  let tokens = template_tokenizer::tokenize(input)
     .map_err(|e| format!("Failed to tokenize template: {}", e))?;
   let (nodes, _) = parse_nodes(&tokens, 0, None)?;
   Ok(TemplateTree {
@@ -31,8 +24,8 @@ fn parse_tree(input: &str) -> Result<TemplateTree, String> {
   })
 }
 
-fn parse_nodes(tokens: &[TemplateToken], start_pos: usize, context: Option<&TemplateToken>)
-  -> Result<(Vec<Box<TemplateNode>>, usize), String> {
+fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Option<&TemplateToken<'a>>)
+  -> Result<(Vec<Box<TemplateNode<'a>>>, usize), String> {
 
   let mut nodes = Vec::new();
   let mut pos = start_pos;
@@ -41,16 +34,16 @@ fn parse_nodes(tokens: &[TemplateToken], start_pos: usize, context: Option<&Temp
     pos += 1;
     match token {
       TemplateToken::Text(text) => {
-        nodes.push(Box::new(TemplateNode::Text(text.clone())));
+        nodes.push(Box::new(TemplateNode::Text(text)));
       }
       TemplateToken::Var(var) => {
-        nodes.push(Box::new(TemplateNode::Var(var.clone())));
+        nodes.push(Box::new(TemplateNode::Var(var)));
       }
       TemplateToken::For(var, expr) => {
         let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
         nodes.push(Box::new(TemplateNode::ForEach(
-          var.clone(),
-          expr.clone(),
+          var,
+          expr,
           Box::new(TemplateNode::Seq(body))
         )));
         pos = new_start_pos;
@@ -95,61 +88,61 @@ mod tests {
   use super::TemplateNode::*;
 
   #[test]
-  fn parse_tree_handles_empty_input() {
-    let result = parse_tree("").unwrap();
+  fn parse_handles_empty_input() {
+    let result = parse("").unwrap();
     assert_eq!(result.root, Seq(Vec::new()));
   }
 
   #[test]
-  fn parse_tree_handles_simple_text() {
+  fn parse_handles_simple_text() {
     let input = "This is a simple text.";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
-          Box::new(Text(input.to_string()))
+          Box::new(Text(input))
         ]
       )
     );
   }
 
   #[test]
-  fn parse_tree_handles_text_with_variables() {
+  fn parse_handles_text_with_variables() {
     let input = "Hello, [name]! Welcome to [place.address].";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
-          Box::new(Text("Hello, ".to_string())),
-          Box::new(Var("name".to_string())),
-          Box::new(Text("! Welcome to ".to_string())),
-          Box::new(Var("place.address".to_string())),
-          Box::new(Text(".".to_string()))
+          Box::new(Text("Hello, ")),
+          Box::new(Var("name")),
+          Box::new(Text("! Welcome to ")),
+          Box::new(Var("place.address")),
+          Box::new(Text("."))
         ]
       )
     );
   }
 
   #[test]
-  fn parse_tree_handles_foreach() {
+  fn parse_handles_foreach() {
     let input = "\
 [for section in sections]
   Section. Title: [section.title]
 [endfor section]";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
           Box::new(ForEach(
-            "section".to_string(),
-            "sections".to_string(),
+            "section",
+            "sections",
             Box::new(Seq(vec![
-              Box::new(Text("\n  Section. Title: ".to_string())),
-              Box::new(Var("section.title".to_string())),
-              Box::new(Text("\n".to_string()))
+              Box::new(Text("\n  Section. Title: ")),
+              Box::new(Var("section.title")),
+              Box::new(Text("\n"))
             ]))
           ))
         ]
@@ -158,7 +151,7 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_handles_nested_foreach() {
+  fn parse_handles_nested_foreach() {
     let input = "\
 [for section in sections]
   <ul>
@@ -169,26 +162,26 @@ mod tests {
     [endfor link]
   </ul>
 [endfor section]";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
           Box::new(ForEach(
-            "section".to_string(),
-            "sections".to_string(),
+            "section",
+            "sections",
             Box::new(Seq(vec![
-              Box::new(Text("\n  <ul>\n    ".to_string())),
+              Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
-                "link".to_string(),
-                "section.links".to_string(),
+                "link",
+                "section.links",
                 Box::new(Seq(vec![
-                  Box::new(Text("\n      <li>\n        Link: ".to_string())),
-                  Box::new(Var("link.href".to_string())),
-                  Box::new(Text("\n      </li>\n    ".to_string()))
+                  Box::new(Text("\n      <li>\n        Link: ")),
+                  Box::new(Var("link.href")),
+                  Box::new(Text("\n      </li>\n    "))
                 ]))
               )),
-              Box::new(Text("\n  </ul>\n".to_string()))
+              Box::new(Text("\n  </ul>\n"))
             ]))
           ))
         ]
@@ -197,7 +190,7 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_nested_foreach_with_incorrect_closing_order_fails() {
+  fn parse_nested_foreach_with_incorrect_closing_order_fails() {
     let input = "[for section in sections]
       <ul>
         [for link in section.links]
@@ -214,26 +207,26 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_endfor_without_for_fails() {
+  fn parse_endfor_without_for_fails() {
     let input = "[endfor section]";
     assert_invalid_syntax(input, "Unexpected token EndFor(\"section\") nested in None.");
   }
 
   #[test]
-  fn parse_tree_handles_if_statements() {
+  fn parse_handles_if_statements() {
     let input = "\
 [if exists section.subsections]
   Subsections exist.
 [endif]";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
           Box::new(If(
-            "exists section.subsections".to_string(),
+            vec!["exists", "section.subsections"],
             Box::new(Seq(vec![
-              Box::new(Text("\n  Subsections exist.\n".to_string()))
+              Box::new(Text("\n  Subsections exist.\n"))
             ]))
           ))
         ]
@@ -242,7 +235,7 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_handles_foreach_nested_in_if() {
+  fn parse_handles_foreach_nested_in_if() {
     let input = "\
 [if exists section.subsections]
   <ul>
@@ -251,25 +244,25 @@ mod tests {
     [endfor subsection]
   </ul>
 [endif]";
-    let result = parse_tree(input).unwrap();
+    let result = parse(input).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
           Box::new(If(
-            "exists section.subsections".to_string(),
+            vec!["exists", "section.subsections"],
             Box::new(Seq(vec![
-              Box::new(Text("\n  <ul>\n    ".to_string())),
+              Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
-                "subsection".to_string(),
-                "section.subsections".to_string(),
+                "subsection",
+                "section.subsections",
                 Box::new(Seq(vec![
-                  Box::new(Text("\n      <li>Subsection: ".to_string())),
-                  Box::new(Var("subsection.title".to_string())),
-                  Box::new(Text("</li>\n    ".to_string()))
+                  Box::new(Text("\n      <li>Subsection: ")),
+                  Box::new(Var("subsection.title")),
+                  Box::new(Text("</li>\n    "))
                 ]))
               )),
-              Box::new(Text("\n  </ul>\n".to_string()))
+              Box::new(Text("\n  </ul>\n"))
             ]))
           ))
         ]
@@ -278,7 +271,7 @@ mod tests {
   } 
 
   #[test]
-  fn parse_tree_with_incorrect_if_and_foreach_nesting_fails() {
+  fn parse_with_incorrect_if_and_foreach_nesting_fails() {
     let input = "\
 [if exists section.subsections]
   <ul>
@@ -294,13 +287,13 @@ mod tests {
   }
 
   #[test]
-  fn parse_tree_endif_without_if_fails() {
+  fn parse_endif_without_if_fails() {
     let input = "[endif]";
     assert_invalid_syntax(input, "Unexpected token EndIf nested in None.");
   }
 
   fn assert_invalid_syntax(input: &str, expected: &str) {
-    let err = parse_tree(input).unwrap_err();
+    let err = parse(input).unwrap_err();
     assert!(err.contains(expected),
       "Expected error for input '{}', got: {}", input, err);
   }
