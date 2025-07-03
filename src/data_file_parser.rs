@@ -1,3 +1,4 @@
+use crate::expressions::Path;
 use std::fs;
 use serde_yaml;
 
@@ -13,6 +14,27 @@ pub fn parse(path: &str) -> Result<DataSet, Box<dyn std::error::Error>> {
 fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
   let value: serde_yaml::Value = serde_yaml::from_str(input)?;
   Ok(DataSet { data: value })
+}
+
+impl DataSet {
+  pub fn get_value(&self, path: &Path) -> Result<&str, String> {
+    let value = path.segments.iter().fold(Some(&self.data), |acc, segment| {
+      acc.and_then(|v| v.get(segment))
+    });
+    match value {
+      Some(value) => {
+        match value.as_str() {
+          Some(value) => Ok(value),
+          None => Err(
+            format!("Var [{}] is not a string.", path.segments.join("."))
+          ),
+        }
+      },
+      None => Err(
+        format!("Var [{}] is not defined.", path.segments.join("."))
+      ),
+    }
+  }
 }
 
 #[cfg(test)]

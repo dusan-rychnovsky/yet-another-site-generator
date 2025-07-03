@@ -17,19 +17,7 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
       Ok(output)
     },
     Var(path) => {
-      match data.data.get(path.segments[0]) {
-        Some(value) => {
-          match value.as_str() {
-            Some(s) => Ok(s.to_string()),
-            None => Err(
-              format!("Var [{}] is not a string.", path.segments.join("."))
-            ),
-          }
-        },
-        None => Err(
-          format!("Var [{}] is not defined.", path.segments.join("."))
-        ),
-      }
+      data.get_value(path).map(String::from)
     },
     Text(text) => {
       Ok(text.to_string())
@@ -109,6 +97,30 @@ mod tests {
     };
     let err = visit(&tree, &data).unwrap_err();
     assert!(err.contains("Var [name] is not a string."), "Got error: {}", err);
+  }
+
+  #[test]
+  fn visit_var_with_multi_segment_path() {
+    let data = DataSet {
+      data: serde_yaml::Value::Mapping(
+        serde_yaml::Mapping::from_iter(vec![
+          (serde_yaml::Value::String("section".to_string()), serde_yaml::Value::Mapping(
+            serde_yaml::Mapping::from_iter(vec![
+              (serde_yaml::Value::String("title".to_string()), serde_yaml::Value::String("Go Basics".to_string())),
+            ])
+          )),
+        ])
+      )
+    };
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(Text("Section title: ")),
+        Box::new(Var(Path::from(vec!["section", "title"]))),
+        Box::new(Text(".")),
+      ]),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "Section title: Go Basics.");
   }
 
   fn unwrap(result: Result<String, String>) -> String {
