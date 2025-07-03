@@ -1,11 +1,91 @@
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken<'a> {
-    Text(&'a str),
-    Var(Path<'a>),
-    For(&'a str, Path<'a>),
-    EndFor(&'a str),
-    If(Expr<'a>),
-    EndIf,
+  Text(&'a str),
+  Var(Path<'a>),
+  For(&'a str, Path<'a>),
+  EndFor(&'a str),
+  If(Expr<'a>),
+  EndIf,
+}
+
+impl<'a> TemplateToken<'a> {
+  fn parse_tag(input: &'a str) -> Result<Self, String> {
+    let parts: Vec<&str> = input.split_whitespace().collect();
+    if parts.is_empty() {
+      return Err("Tags cannot be empty.".to_string());
+    }
+    let tag = match parts[0] {
+      "for" => Self::parse_for_tag(parts)?,
+      "endfor" => Self::parse_endfor_tag(parts)?,
+      "if" => Self::parse_if_tag(parts)?,
+      "endif" => Self::parse_endif_tag(parts)?,
+      _ => Self::parse_var_tag(parts)?,
+    };
+    Ok(tag)
+  }
+
+  fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
+    if parts.len() == 1 {
+      Ok(TemplateToken::Var(
+        Path::parse(parts[0])
+      ))
+    }
+    else {
+      Err("Invalid var syntax - no parameters expected.")
+    }
+  }
+
+  fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    assert!(parts[0] == "endif", "Expected 'endif' tag, got: {}", parts[0]);
+    if parts.len() == 1 {
+      Ok(TemplateToken::EndIf)
+    }
+    else {
+      Err("Invalid endif tag syntax. No parameters expected.".to_string())
+    }
+  }
+
+  fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
+    let expr = Expr::parse(parts[1..].to_vec())
+      .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
+    Ok(TemplateToken::If(expr))
+  }
+
+  fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
+    if parts.len() == 4 {
+      if parts[2] == "in" {
+        Ok(TemplateToken::For(parts[1], Path::parse(parts[3])))
+      }
+      else {
+        Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
+      }
+    }
+    else {
+      Err(
+        format!(
+          "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
+          parts
+        )
+      )
+    }
+  }
+
+  fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    assert!(parts[0] == "endfor", "Expected 'endfor' tag, got: {}", parts[0]);
+    if parts.len() == 2 {
+      Ok(TemplateToken::EndFor(parts[1]))
+    }
+    else {
+      Err(
+        format!(
+          "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
+          parts
+        )
+      )
+    }
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -63,7 +143,7 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
       if let Some(to) = rest.find(']') {
         let tag_input = &rest[from+1..to];
         println!("tag input: '{}'", tag_input);
-        let tag = parse_tag(tag_input)?;
+        let tag = TemplateToken::parse_tag(tag_input)?;
         println!("tag: {:?}", tag);
         tokens.push(tag);
         rest = &rest[to+1..];
@@ -81,84 +161,6 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
     }
   }
   Ok(tokens)
-}
-
-fn parse_tag<'a>(input: &'a str) -> Result<TemplateToken<'a>, String> {
-  let parts: Vec<&str> = input.split_whitespace().collect();
-  if parts.is_empty() {
-    return Err("Tags cannot be empty.".to_string());
-  }
-  let tag = match parts[0] {
-    "for" => parse_for_tag(parts)?,
-    "endfor" => parse_endfor_tag(parts)?,
-    "if" => parse_if_tag(parts)?,
-    "endif" => parse_endif_tag(parts)?,
-    _ => parse_var_tag(parts)?,
-  };
-  Ok(tag)
-}
-
-fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
-  if parts.len() == 1 {
-    Ok(TemplateToken::Var(
-      Path::parse(parts[0])
-    ))
-  }
-  else {
-    Err("Invalid var syntax - no parameters expected.")
-  }
-}
-
-fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-  assert!(parts[0] == "endif", "Expected 'endif' tag, got: {}", parts[0]);
-  if parts.len() == 1 {
-    Ok(TemplateToken::EndIf)
-  }
-  else {
-    Err("Invalid endif tag syntax. No parameters expected.".to_string())
-  }
-}
-
-fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-  assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
-  let expr = Expr::parse(parts[1..].to_vec())
-    .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
-  Ok(TemplateToken::If(expr))
-}
-
-fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-  assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
-  if parts.len() == 4 {
-    if parts[2] == "in" {
-      Ok(TemplateToken::For(parts[1], Path::parse(parts[3])))
-    }
-    else {
-      Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
-    }
-  }
-  else {
-    Err(
-      format!(
-        "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
-        parts
-      )
-    )
-  }
-}
-
-fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-  assert!(parts[0] == "endfor", "Expected 'endfor' tag, got: {}", parts[0]);
-  if parts.len() == 2 {
-    Ok(TemplateToken::EndFor(parts[1]))
-  }
-  else {
-    Err(
-      format!(
-        "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
-        parts
-      )
-    )
-  }
 }
 
 #[cfg(test)]
