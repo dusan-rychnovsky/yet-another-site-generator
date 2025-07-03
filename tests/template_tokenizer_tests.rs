@@ -18,27 +18,27 @@ fn tokenize_template_go_html() {
       "<!DOCTYPE html>\n<html lang=\"cs\">",
       "<title>Mé oblíbené zdroje informací na téma: "
     );
-    assert_eq!(Var(Path { segments: vec!["title"] }), tokens[1]); // TODO: simplify by implementing a helper method to create Var from vec!
+    assert_eq!(Var(Path::from(vec!["title"])), tokens[1]);
     assert_token_text(
       &tokens[2],
       "</title>\n  <link ",
       "<ol class=\"breadcrumb mb-0\">\n        "
     );
-    assert_eq!(For("crumb", Path { segments: vec!["crumbs"] },), tokens[3]);
+    assert_eq!(For("crumb", Path::from(vec!["crumbs"])), tokens[3]);
     assert_eq!(Text("\n          <li class=\"breadcrumb-item\"><a href=\""), tokens[4]);
-    assert_eq!(Var(Path { segments: vec!["crumb", "href"] }), tokens[5]);
+    assert_eq!(Var(Path::from(vec!["crumb", "href"])), tokens[5]);
     assert_eq!(Text("\">"), tokens[6]);
-    assert_eq!(Var(Path { segments: vec!["crumb", "text"] }), tokens[7]);
+    assert_eq!(Var(Path::from(vec!["crumb", "text"])), tokens[7]);
     assert_eq!(Text("</a></li>\n        "), tokens[8]);
     assert_eq!(EndFor("crumbs"), tokens[9]);
     // ...
-    assert_eq!(If(Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } }), tokens[29]);
+    assert_eq!(If(Expr::from(Exists, vec!["section", "subsections"])), tokens[29]);
     assert_eq!(Text("\n                  <ul>\n                    "), tokens[30]);
-    assert_eq!(For("subsection", Path { segments: vec!["section", "subsections"] },), tokens[31]);
+    assert_eq!(For("subsection", Path::from(vec!["section", "subsections"])), tokens[31]);
     assert_eq!(Text("\n                      <li class=\"mb-1\">\n                        <em>"), tokens[32]);
-    assert_eq!(Var(Path { segments: vec!["subsection", "title"] }), tokens[33]);
+    assert_eq!(Var(Path::from(vec!["subsection", "title"])), tokens[33]);
     assert_eq!(Text("</em> - "), tokens[34]);
-    assert_eq!(Var(Path { segments: vec!["subsection", "content"] }), tokens[35]);
+    assert_eq!(Var(Path::from(vec!["subsection", "content"])), tokens[35]);
     assert_eq!(Text("\n                      </li>\n                    "), tokens[36]);
     assert_eq!(EndFor("subsection"), tokens[37]);
     assert_eq!(Text("\n                  </ul>\n                "), tokens[38]);

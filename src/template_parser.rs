@@ -118,9 +118,9 @@ mod tests {
       Seq(
         vec![
           Box::new(Text("Hello, ")),
-          Box::new(Var(Path { segments: vec!["name"] })),
+          Box::new(Var(Path::from(vec!["name"]))),
           Box::new(Text("! Welcome to ")),
-          Box::new(Var(Path { segments: vec!["place", "address"] })),
+          Box::new(Var(Path::from(vec!["place", "address"]))),
           Box::new(Text("."))
         ]
       )
@@ -143,7 +143,7 @@ mod tests {
             Path { segments: vec!["sections"] },
             Box::new(Seq(vec![
               Box::new(Text("\n  Section. Title: ")),
-              Box::new(Var(Path { segments: vec!["section", "title"] })),
+              Box::new(Var(Path::from(vec!["section", "title"]))),
               Box::new(Text("\n"))
             ]))
           ))
@@ -176,10 +176,10 @@ mod tests {
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "link",
-                Path { segments: vec!["section", "links"] },
+                Path::from(vec!["section", "links"]),
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>\n        Link: ")),
-                  Box::new(Var(Path { segments: vec!["link", "href"] })),
+                  Box::new(Var(Path::from(vec!["link", "href"]))),
                   Box::new(Text("\n      </li>\n    "))
                 ]))
               )),
@@ -226,7 +226,7 @@ mod tests {
       Seq(
         vec![
           Box::new(If(
-            Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } },
+            Expr::from(Exists, vec!["section", "subsections"]),
             Box::new(Seq(vec![
               Box::new(Text("\n  Subsections exist.\n"))
             ]))
@@ -252,15 +252,15 @@ mod tests {
       Seq(
         vec![
           Box::new(If(
-            Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } },
+            Expr::from(Exists, vec!["section", "subsections"]),
             Box::new(Seq(vec![
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "subsection",
-                Path { segments: vec!["section", "subsections"] },
+                Path::from(vec!["section", "subsections"]),
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>Subsection: ")),
-                  Box::new(Var(Path { segments: vec!["subsection", "title"] })),
+                  Box::new(Var(Path::from(vec!["subsection", "title"]))),
                   Box::new(Text("</li>\n    "))
                 ]))
               )),

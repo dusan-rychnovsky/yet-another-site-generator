@@ -20,6 +20,10 @@ impl<'a> Path<'a> {
       segments: input.split('.').collect()
     }
   }
+
+  pub fn from(segments: Vec<&'a str>) -> Self {
+    Path { segments }
+  }
 }
 
 impl<'a> Expr<'a> {
@@ -36,5 +40,12 @@ impl<'a> Expr<'a> {
       predicate,
       path,
     })
+  }
+
+  pub fn from(predicate: Predicate, segments: Vec<&'a str>) -> Self {
+    Expr {
+      predicate: predicate,
+      path: Path::from(segments)
+    }
   }
 }

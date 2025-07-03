@@ -144,11 +144,7 @@ mod tests {
     let result = tokenize("[title]").unwrap();
     assert_eq!(
       vec![
-        Var(
-          Path {
-            segments: vec!["title"]
-          }
-        )
+        Var(Path::from(vec!["title"]))
       ],
       result
     );
@@ -159,11 +155,7 @@ mod tests {
     let result = tokenize("[section.title]").unwrap();
     assert_eq!(
       vec![
-        Var(
-          Path {
-            segments: vec!["section", "title"]
-          }
-        )
+        Var(Path::from(vec!["section", "title"]))
       ],
       result
     );
@@ -172,7 +164,7 @@ mod tests {
   #[test]
   fn tokenize_fails_if_no_closing_bracket() {
     let result = tokenize("[section.title").unwrap_err();
-    assert!(result.to_string().contains("Missing closing bracket."));
+    assert!(result.contains("Missing closing bracket."));
   }
 
   #[test]
@@ -181,10 +173,7 @@ mod tests {
     assert_eq!(
       vec![
         Text("Hello, "),
-        Var(
-          Path {
-            segments: vec!["section", "title"]
-          }),
+        Var(Path::from(vec!["section", "title"])),
         Text("!")
       ],
       result
@@ -201,7 +190,7 @@ mod tests {
       vec![
         For(
           "content",
-          Path { segments: vec!["section", "content"] }
+          Path::from(vec!["section", "content"])
         ),
         Text("\n  Some text.\n"),
         EndFor("content")
@@ -235,7 +224,7 @@ mod tests {
 [ endif ]").unwrap();
     assert_eq!(
       vec![
-        If(Expr { predicate: Exists, path: Path { segments: vec! ["section", "subsections"] } }),
+        If(Expr::from(Exists, vec!["section", "subsections"])),
         Text("\n  Some text.\n"),
         EndIf
       ],
