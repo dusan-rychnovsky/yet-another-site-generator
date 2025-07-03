@@ -1,4 +1,4 @@
-use crate::template_tokenizer::{self, TemplateToken};
+use crate::template_tokenizer::{self, TemplateToken, Path};
 use std::option::Option::{self, Some, None};
 
 #[derive(Debug, PartialEq)]
@@ -10,7 +10,7 @@ pub struct TemplateTree<'a> {
 pub enum TemplateNode<'a> {
   Seq(Vec<Box<TemplateNode<'a>>>),
   Text(&'a str),
-  Var(&'a str),
+  Var(Path<'a>),
   ForEach (&'a str, &'a str, Box<TemplateNode<'a>>),
   If (Vec<&'a str>, Box<TemplateNode<'a>>)
 }
@@ -37,7 +37,7 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
         nodes.push(Box::new(TemplateNode::Text(text)));
       }
       TemplateToken::Var(var) => {
-        nodes.push(Box::new(TemplateNode::Var(var)));
+        nodes.push(Box::new(TemplateNode::Var(var.clone())));
       }
       TemplateToken::For(var, expr) => {
         let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
@@ -116,9 +116,9 @@ mod tests {
       Seq(
         vec![
           Box::new(Text("Hello, ")),
-          Box::new(Var("name")),
+          Box::new(Var(Path { segments: vec!["name"] })),
           Box::new(Text("! Welcome to ")),
-          Box::new(Var("place.address")),
+          Box::new(Var(Path { segments: vec!["place", "address"] })),
           Box::new(Text("."))
         ]
       )
@@ -141,7 +141,7 @@ mod tests {
             "sections",
             Box::new(Seq(vec![
               Box::new(Text("\n  Section. Title: ")),
-              Box::new(Var("section.title")),
+              Box::new(Var(Path { segments: vec!["section", "title"] })),
               Box::new(Text("\n"))
             ]))
           ))
@@ -177,7 +177,7 @@ mod tests {
                 "section.links",
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>\n        Link: ")),
-                  Box::new(Var("link.href")),
+                  Box::new(Var(Path { segments: vec!["link", "href"] })),
                   Box::new(Text("\n      </li>\n    "))
                 ]))
               )),
@@ -258,7 +258,7 @@ mod tests {
                 "section.subsections",
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>Subsection: ")),
-                  Box::new(Var("subsection.title")),
+                  Box::new(Var(Path { segments: vec!["subsection", "title"] })),
                   Box::new(Text("</li>\n    "))
                 ]))
               )),

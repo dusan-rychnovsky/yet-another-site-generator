@@ -1,11 +1,16 @@
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken<'a> {
     Text(&'a str),
-    Var(&'a str),
+    Var(Path<'a>),
     For(&'a str, &'a str),
     EndFor(&'a str),
     If(Vec<&'a str>),
     EndIf,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Path<'a> {
+  pub segments: Vec<&'a str>
 }
 
 pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
@@ -52,9 +57,23 @@ fn parse_tag<'a>(input: &'a str) -> Result<TemplateToken<'a>, String> {
     "endfor" => parse_endfor_tag(parts)?,
     "if" => parse_if_tag(parts)?,
     "endif" => parse_endif_tag(parts)?,
-    _ => TemplateToken::Var(input),
+    _ => parse_var_tag(parts)?,
   };
   Ok(tag)
+}
+
+fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
+  if parts.len() == 1 {
+    let segments = parts[0].split('.').collect::<Vec<&str>>();
+    Ok(TemplateToken::Var(
+      Path {
+        segments: segments
+      }
+    ))
+  }
+  else {
+    Err("Invalid var syntax - no parameters expected.")
+  }
 }
 
 fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
@@ -127,10 +146,31 @@ mod tests {
   }
 
   #[test]
-  fn tokenize_handles_var() {
+  fn tokenize_handles_var_with_simple_path() {
+    let result = tokenize("[title]").unwrap();
+    assert_eq!(
+      vec![
+        Var(
+          Path {
+            segments: vec!["title"]
+          }
+        )
+      ],
+      result
+    );
+  }
+
+  #[test]
+  fn tokenize_handles_var_with_complex_path() {
     let result = tokenize("[section.title]").unwrap();
     assert_eq!(
-      vec![Var("section.title")],
+      vec![
+        Var(
+          Path {
+            segments: vec!["section", "title"]
+          }
+        )
+      ],
       result
     );
   }
@@ -147,7 +187,10 @@ mod tests {
     assert_eq!(
       vec![
         Text("Hello, "),
-        Var("section.title"),
+        Var(
+          Path {
+            segments: vec!["section", "title"]
+          }),
         Text("!")
       ],
       result
