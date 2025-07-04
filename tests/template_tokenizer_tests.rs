@@ -30,7 +30,7 @@ fn tokenize_template_go_html() {
     assert_eq!(Text("\">"), tokens[6]);
     assert_eq!(Var(Path::from(vec!["crumb", "text"])), tokens[7]);
     assert_eq!(Text("</a></li>\n        "), tokens[8]);
-    assert_eq!(EndFor("crumbs"), tokens[9]);
+    assert_eq!(EndFor("crumb"), tokens[9]);
     // ...
     assert_eq!(If(Expr::from(Exists, vec!["section", "subsections"])), tokens[29]);
     assert_eq!(Text("\n                  <ul>\n                    "), tokens[30]);

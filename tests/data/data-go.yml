@@ -1,71 +1,72 @@
-page:
-  title: Hra Go
-  crumbs:
-    - href: "/"
-      text: Domů
-    - text: Zdroje
-    - text: Go
-  sections:
-    - title: Go klub Můstek
-      labels: CZ. Klub.
-      img: img/go-club-mustek.png
-      content:
-        - >
-          Nejznámější pražská skupina pro hraní hry Go. Schází se každé úterý od 19:00 v prostorách Česko-japonské společnosti
-          na Můstku. Zahrnuje hráče všech výkonnostních kategorií. K nováčkům jsou velice vstřícní, určitě doporučuji.
-        - "Adresa: Na Můstku 8/380, Praha 1"
-      links:
-        - kind: Web
-          text: Go klub Můstek
-          href: https://goklubmustek.j2m.cz/
-        - kind: Facebook
-          text: Go klub Můstek
-          href: https://www.facebook.com/groups/389119397921527/
-    - title: Go Magic
-      labels: ENG. YouTube.
-      img: img/go-magic.jpg
-      content:
-        - >
-          Moc hezky zpracovaný výukový materiál. Ačkoliv je většina jejich obsahu placená,
-          videa dostupná zdarma na YouTube jsou ideální pro pochopení úplných základů hry.
-      links:
-        - kind: YouTube
-          text: Go Magic
-          href: https://www.youtube.com/@GoMagic
-    - title: Dwyrin (BattsGo)
-      labels: ENG. YouTube. Knihy.
-      img: img/dwyrin.jpg
-      content:
-        - >
-          *Dwyrin* je nadšenec a učitel hry Go, který se věnuje její výuce už od roku 2004. Je autorem populárního YouTube kanálu
-          a několika knih.
-        - >
-          Je známý svou video-sérií Back to Basics, kde demonstruje nezbytnost osvojení základních principů hry.
-          To je důležité i pro pokročilejší hráče, kteří se často nechají unést složitými agresivními taktickými kombinacemi,
-          přičemž ztrácejí přehled a kontrolu nad hrou.
-      subsections:
-        - title: YouTube kanál Dwyrin
-          content: >
-            Komentované partie Go napříč populárními online Go servery proti různě silným protihráčům,
-            od DDK až po nejyšší úrovně DAN. Možnost nahlédnout, jakým způsobem Dwyrin nad svými tahy přemýšlí, velmi usnadňuje
-            pochopení herních principů a jejich použití v praxi.
-        - title: Knižní série Learning Go
-          content: Principy hry Go vysvětlené názornou a velmi čtivou formou. Obsahově i stylem podobné jeho YouTube videím.
-      links:
-        - kind: YouTube
-          text: Dwyrin
-          href: https://www.youtube.com/@dwyrin
-        - kind: Books
-          text: "Dwyrin 7-dan: Learning Go"
-          href: https://www.amazon.com/dp/B0D978M5K9
-    - title: Triton Baduk
-      labels: ENG. YouTube.
-      img: img/triton-baduk.jpg
-      content:
-        - >
-          *Triton* je propagátor a učitel hry Go skrz platformu YouTube. Obsahem i formou jsou jeho videa podobná Dwyrinovým.
-          Skvělá alternativa pro zpestření.
-      links:
-        - kind: YouTube
-          text: Triton Baduk
-          href: https://www.youtube.com/@TritonBaduk
+title: Hra Go
+crumbs:
+  - href: "/"
+    text: Domů
+  - href: ""
+    text: Zdroje
+  - href: ""
+    text: Go
+sections:
+  - title: Go klub Můstek
+    labels: CZ. Klub.
+    img: img/go-club-mustek.png
+    content:
+      - >
+        Nejznámější pražská skupina pro hraní hry Go. Schází se každé úterý od 19:00 v prostorách Česko-japonské společnosti
+        na Můstku. Zahrnuje hráče všech výkonnostních kategorií. K nováčkům jsou velice vstřícní, určitě doporučuji.
+      - "Adresa: Na Můstku 8/380, Praha 1"
+    links:
+      - kind: Web
+        text: Go klub Můstek
+        href: https://goklubmustek.j2m.cz/
+      - kind: Facebook
+        text: Go klub Můstek
+        href: https://www.facebook.com/groups/389119397921527/
+  - title: Go Magic
+    labels: ENG. YouTube.
+    img: img/go-magic.jpg
+    content:
+      - >
+        Moc hezky zpracovaný výukový materiál. Ačkoliv je většina jejich obsahu placená,
+        videa dostupná zdarma na YouTube jsou ideální pro pochopení úplných základů hry.
+    links:
+      - kind: YouTube
+        text: Go Magic
+        href: https://www.youtube.com/@GoMagic
+  - title: Dwyrin (BattsGo)
+    labels: ENG. YouTube. Knihy.
+    img: img/dwyrin.jpg
+    content:
+      - >
+        *Dwyrin* je nadšenec a učitel hry Go, který se věnuje její výuce už od roku 2004. Je autorem populárního YouTube kanálu
+        a několika knih.
+      - >
+        Je známý svou video-sérií Back to Basics, kde demonstruje nezbytnost osvojení základních principů hry.
+        To je důležité i pro pokročilejší hráče, kteří se často nechají unést složitými agresivními taktickými kombinacemi,
+        přičemž ztrácejí přehled a kontrolu nad hrou.
+    subsections:
+      - title: YouTube kanál Dwyrin
+        content: >
+          Komentované partie Go napříč populárními online Go servery proti různě silným protihráčům,
+          od DDK až po nejyšší úrovně DAN. Možnost nahlédnout, jakým způsobem Dwyrin nad svými tahy přemýšlí, velmi usnadňuje
+          pochopení herních principů a jejich použití v praxi.
+      - title: Knižní série Learning Go
+        content: Principy hry Go vysvětlené názornou a velmi čtivou formou. Obsahově i stylem podobné jeho YouTube videím.
+    links:
+      - kind: YouTube
+        text: Dwyrin
+        href: https://www.youtube.com/@dwyrin
+      - kind: Books
+        text: "Dwyrin 7-dan: Learning Go"
+        href: https://www.amazon.com/dp/B0D978M5K9
+  - title: Triton Baduk
+    labels: ENG. YouTube.
+    img: img/triton-baduk.jpg
+    content:
+      - >
+        *Triton* je propagátor a učitel hry Go skrz platformu YouTube. Obsahem i formou jsou jeho videa podobná Dwyrinovým.
+        Skvělá alternativa pro zpestření.
+    links:
+      - kind: YouTube
+        text: Triton Baduk
+        href: https://www.youtube.com/@TritonBaduk

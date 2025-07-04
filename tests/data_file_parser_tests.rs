@@ -3,19 +3,17 @@ use std::option::Option::None;
 
 #[test]
 fn parse_loads_and_parses_data_file() {
-  let page_data = data_file_parser::parse("tests/data/data-go.yml");
+  let data = data_file_parser::parse("tests/data/data-go.yml");
 
-  assert!(page_data.is_ok(), "Expected to parse data file successfully. Error: {:?}", page_data.err());
-  let page_data = page_data.unwrap().data;
-
-  let page_data = &page_data["page"];
+  assert!(data.is_ok(), "Expected to parse data file successfully. Error: {:?}", data.err());
+  let data = data.unwrap().data;
 
   // title
-  assert_eq!(page_data["title"], "Hra Go");
+  assert_eq!(data["title"], "Hra Go");
 
   // crumbs
-  let crumbs = page_data["crumbs"].as_sequence()
-    .expect("page.crumbs should be a sequence");
+  let crumbs = data["crumbs"].as_sequence()
+    .expect("crumbs should be a sequence");
   assert_eq!(crumbs.len(), 3);
   assert_eq!(crumbs[0]["text"], "Domů");
   assert_eq!(crumbs[0]["href"], "/");
@@ -23,8 +21,8 @@ fn parse_loads_and_parses_data_file() {
   assert_eq!(crumbs[2]["text"], "Go");
 
   // sections
-  let sections = page_data["sections"].as_sequence()
-    .expect("page.sections should be a sequence");
+  let sections = data["sections"].as_sequence()
+    .expect("sections should be a sequence");
   assert_eq!(sections.len(), 4);
 
   // section 0
@@ -33,12 +31,12 @@ fn parse_loads_and_parses_data_file() {
   assert_eq!(section["labels"], "CZ. Klub.");
   assert_eq!(section["img"], "img/go-club-mustek.png");
   let content = section["content"].as_sequence()
-    .expect("page.sections.content should be a sequence");
+    .expect("sections.content should be a sequence");
   assert_eq!(content.len(), 2);
   assert_eq!(content[1], "Adresa: Na Můstku 8/380, Praha 1");
   assert_eq!(None, section.get("subsections"), "section[0] should have no subsections");
   let links = section["links"].as_sequence()
-    .expect("page.sections.links should be a sequence");
+    .expect("sections.links should be a sequence");
   assert_eq!(links.len(), 2);
   assert_eq!(links[0]["kind"], "Web");
   assert_eq!(links[0]["text"], "Go klub Můstek");
@@ -51,7 +49,7 @@ fn parse_loads_and_parses_data_file() {
   let section = &sections[2];
   assert_eq!(section["title"], "Dwyrin (BattsGo)");
   let subsections = section["subsections"].as_sequence()
-    .expect("page.sections.subsections should be a sequence");
+    .expect("sections.subsections should be a sequence");
   assert_eq!(subsections.len(), 2);
   assert_eq!(subsections[0]["title"], "YouTube kanál Dwyrin");
   assert_eq!(subsections[1]["title"], "Knižní série Learning Go");
