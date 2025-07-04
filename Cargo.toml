@@ -1,5 +1,5 @@
 [package]
-name = "yet-another-site-generator"
+name = "yasg"
 version = "0.1.0"
 edition = "2024"
 

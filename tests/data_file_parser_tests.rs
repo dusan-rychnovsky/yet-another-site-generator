@@ -1,4 +1,4 @@
-use yet_another_site_generator::data_file_parser;
+use yasg::data_file_parser;
 use std::option::Option::None;
 
 #[test]

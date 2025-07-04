@@ -1,5 +1,5 @@
-use yet_another_site_generator::template_parser;
-use yet_another_site_generator::template_parser::TemplateNode;
+use yasg::template_parser;
+use yasg::template_parser::TemplateNode;
 use std::fs;
 
 #[test]

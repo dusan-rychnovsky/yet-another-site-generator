@@ -1,5 +1,5 @@
-use yet_another_site_generator::template_tokenizer::{self, TemplateToken, TemplateToken::*};
-use yet_another_site_generator::expressions::{Path, Expr, Predicate::*};
+use yasg::template_tokenizer::{self, TemplateToken, TemplateToken::*};
+use yasg::expressions::{Path, Expr, Predicate::*};
 use std::fs;
 
 #[test]
