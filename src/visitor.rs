@@ -1,6 +1,7 @@
 use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
 use crate::data_file_parser::DataSet;
 use crate::expressions::Path;
+use serde_yaml::{Value, Mapping};
 
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
   visit_node(&tree.root, data)
@@ -32,7 +33,7 @@ mod tests {
 
   #[test]
   fn visit_simple_text() {
-    let data = DataSet { data: serde_yaml::Value::Null };
+    let data = DataSet { data: Value::Null };
     let tree = TemplateTree {
       root: Text("Hello, world!"),
     };
@@ -43,9 +44,9 @@ mod tests {
   #[test]
   fn visit_var_with_simple_path() {
     let data = DataSet {
-      data: serde_yaml::Value::Mapping(
-        serde_yaml::Mapping::from_iter(vec![
-          (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::String("Julia".to_string())),
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("name".to_string()), Value::String("Julia".to_string())),
         ])
       )
     };
@@ -62,7 +63,7 @@ mod tests {
 
   #[test]
   fn visit_var_fails_if_data_entry_doesnt_exist() {
-    let data = DataSet { data: serde_yaml::Value::Mapping(serde_yaml::Mapping::new()) };
+    let data = DataSet { data: Value::Mapping(Mapping::new()) };
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -77,12 +78,12 @@ mod tests {
   #[test]
   fn visit_var_fails_if_data_entry_isnt_string() {
     let data = DataSet {
-      data: serde_yaml::Value::Mapping(
-        serde_yaml::Mapping::from_iter(vec![
-          (serde_yaml::Value::String("name".to_string()), serde_yaml::Value::Mapping(
-            serde_yaml::Mapping::from_iter(vec![
-              (serde_yaml::Value::String("first".to_string()), serde_yaml::Value::String("Julia".to_string())),
-              (serde_yaml::Value::String("last".to_string()), serde_yaml::Value::String("Doe".to_string())),
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("name".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("first".to_string()), Value::String("Julia".to_string())),
+              (Value::String("last".to_string()), Value::String("Doe".to_string())),
             ])
           )),
         ])
@@ -102,11 +103,11 @@ mod tests {
   #[test]
   fn visit_var_with_multi_segment_path() {
     let data = DataSet {
-      data: serde_yaml::Value::Mapping(
-        serde_yaml::Mapping::from_iter(vec![
-          (serde_yaml::Value::String("section".to_string()), serde_yaml::Value::Mapping(
-            serde_yaml::Mapping::from_iter(vec![
-              (serde_yaml::Value::String("title".to_string()), serde_yaml::Value::String("Go Basics".to_string())),
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("section".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("title".to_string()), Value::String("Go Basics".to_string())),
             ])
           )),
         ])
