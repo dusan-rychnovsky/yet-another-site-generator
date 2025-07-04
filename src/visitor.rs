@@ -23,6 +23,15 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
     Text(text) => {
       Ok(text.to_string())
     },
+    ForEach(var, path, body) => {
+      let items = data.list(var, path)?;
+      let mut output = String::new();
+      for item in items {
+        let str = visit_node(body, &item)?;
+        output.push_str(&str);
+      }
+      Ok(output)
+    },
     _ => Ok(String::from("not implemented yet")),
   }
 }
@@ -72,7 +81,7 @@ mod tests {
       ]),
     };
     let err = visit(&tree, &data).unwrap_err();
-    assert!(err.contains("Var [name] is not defined."), "Got error: {}", err);
+    assert!(err.contains("Path [name] is not defined in data file."), "Got error: {}", err);
   }
 
   #[test]
@@ -97,7 +106,7 @@ mod tests {
       ]),
     };
     let err = visit(&tree, &data).unwrap_err();
-    assert!(err.contains("Var [name] is not a string."), "Got error: {}", err);
+    assert!(err.contains("Path [name] does not reference a string in data file."), "Got error: {}", err);
   }
 
   #[test]
@@ -124,6 +133,46 @@ mod tests {
     assert_eq!(result, "Section title: Go Basics.");
   }
 
+  #[test]
+  fn visit_foreach() {
+    let data = DataSet {
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("section".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("links".to_string()), Value::Sequence(vec![
+                Value::Mapping(Mapping::from_iter(vec![
+                  (Value::String("href".to_string()), Value::String("Go Basics".to_string())),
+                ])),
+                Value::Mapping(Mapping::from_iter(vec![
+                  (Value::String("href".to_string()), Value::String("Advanced Go".to_string())),
+                ])),
+              ])),
+            ])
+          )),
+        ])
+      )
+    };
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(ForEach(
+          "link",
+          Path::from(vec!["section", "links"]),
+          Box::new(Seq(vec![
+            Box::new(Text("- link: ")),
+            Box::new(Var(Path::from(vec!["link", "href"]))),
+            Box::new(Text("\n")),
+          ]))
+        )),
+      ]),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "\
+- link: Go Basics
+- link: Advanced Go
+");
+  }
+          
   fn unwrap(result: Result<String, String>) -> String {
     assert!(result.is_ok(), "Error visiting NodeTree: {:?}", result.err());
     result.unwrap()

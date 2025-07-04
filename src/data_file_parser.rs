@@ -26,13 +26,43 @@ impl DataSet {
         match value.as_str() {
           Some(value) => Ok(value),
           None => Err(
-            format!("Var [{}] is not a string.", path.segments.join("."))
+            format!("Path [{}] does not reference a string in data file.", path.segments.join("."))
           ),
         }
       },
       None => Err(
-        format!("Var [{}] is not defined.", path.segments.join("."))
+        format!("Path [{}] is not defined in data file.", path.segments.join("."))
       ),
+    }
+  }
+
+  pub fn list(&self, context: &str, path: &Path) -> Result<Vec<DataSet>, String> {
+    // TODO: deduplicate
+    let value = path.segments.iter().fold(Some(&self.data), |acc, segment| {
+      acc.and_then(|v| v.get(segment))
+    });
+    match value {
+      Some(value) => {
+        match value.as_sequence() {
+          Some(seq) => Ok(seq.iter().map(|v| Self::push(context, v)).collect()),
+          None => Err(
+            format!("Path [{}] does not reference a sequence in data file.", path.segments.join("."))
+          ),
+        }
+      },
+      None => Err(
+        format!("Path [{}] is not defined in data file.", path.segments.join("."))
+      ),
+    }
+  }
+
+  fn push(str: &str, value: &serde_yaml::Value) -> DataSet {
+    DataSet {
+      data: serde_yaml::Value::Mapping(
+        serde_yaml::Mapping::from_iter(vec![
+          (serde_yaml::Value::String(str.to_string()), value.clone()), // TODO: can I get rid of clones?
+        ])
+      )
     }
   }
 }
