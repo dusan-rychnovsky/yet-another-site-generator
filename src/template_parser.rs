@@ -19,7 +19,11 @@ pub enum TemplateNode<'a> {
 pub fn parse<'a>(input: &'a str) -> Result<TemplateTree<'a>, String> {
   let tokens = template_tokenizer::tokenize(input)
     .map_err(|e| format!("Failed to tokenize template: {}", e))?;
-  let (nodes, _) = parse_nodes(&tokens, 0, None)?;
+  parse_tokens(&tokens)
+}
+
+pub fn parse_tokens<'a>(tokens: &[TemplateToken<'a>]) -> Result<TemplateTree<'a>, String> {
+  let (nodes, _) = parse_nodes(tokens, 0, None)?;
   Ok(TemplateTree {
     root: TemplateNode::Seq(nodes),
   })

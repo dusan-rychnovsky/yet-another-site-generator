@@ -11,7 +11,7 @@ pub fn parse(path: &str) -> Result<DataSet, Box<dyn std::error::Error>> {
   parse_content(&content)
 }
 
-fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
+pub fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
   let value: serde_yaml::Value = serde_yaml::from_str(input)?;
   Ok(DataSet { data: value })
 }

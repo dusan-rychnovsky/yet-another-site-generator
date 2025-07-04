@@ -18,14 +18,14 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
       if from > 0 {
         let text = &rest[..from];
         let text = TemplateToken::Text(text);
-        println!("text: {:?}", text);
+        // println!("text: {:?}", text);
         tokens.push(text);
       }
       if let Some(to) = rest.find(']') {
         let tag_input = &rest[from+1..to];
-        println!("tag input: '{}'", tag_input);
+        // println!("tag input: '{}'", tag_input);
         let tag = TemplateToken::parse_tag(tag_input)?;
-        println!("tag: {:?}", tag);
+        // println!("tag: {:?}", tag);
         tokens.push(tag);
         rest = &rest[to+1..];
       }
@@ -36,7 +36,7 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
     else {
       let text = rest;
       let text = TemplateToken::Text(text);
-      println!("text: {:?}", text);
+      // println!("text: {:?}", text);
       tokens.push(text);
       break;
     }

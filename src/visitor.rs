@@ -42,8 +42,7 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
           }
         }
       }
-    },
-    _ => Ok(String::from("not implemented yet")),
+    }
   }
 }
 
@@ -211,6 +210,7 @@ mod tests {
     assert_eq!(result, "We have 2 items left.");
   }
 
+  #[test]
   fn visit_if_not_exists() {
     let data = DataSet {
       data: Value::Mapping(
