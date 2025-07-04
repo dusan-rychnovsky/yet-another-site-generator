@@ -18,9 +18,7 @@ fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
 
 impl DataSet {
   pub fn get_value(&self, path: &Path) -> Result<&str, String> {
-    let value = path.segments.iter().fold(Some(&self.data), |acc, segment| {
-      acc.and_then(|v| v.get(segment))
-    });
+    let value = Self::locate(&self, path);
     match value {
       Some(value) => {
         match value.as_str() {
@@ -37,10 +35,7 @@ impl DataSet {
   }
 
   pub fn list(&self, context: &str, path: &Path) -> Result<Vec<DataSet>, String> {
-    // TODO: deduplicate
-    let value = path.segments.iter().fold(Some(&self.data), |acc, segment| {
-      acc.and_then(|v| v.get(segment))
-    });
+    let value = Self::locate(&self, path);
     match value {
       Some(value) => {
         match value.as_sequence() {
@@ -54,6 +49,16 @@ impl DataSet {
         format!("Path [{}] is not defined in data file.", path.segments.join("."))
       ),
     }
+  }
+
+  pub fn exists(&self, path: &Path) -> bool {
+    Self::locate(&self, path).is_some()
+  }
+
+  fn locate(&self, path: &Path) -> Option<&serde_yaml::Value> {
+    path.segments.iter().fold(Some(&self.data), |acc, segment| {
+      acc.and_then(|v| v.get(segment))
+    })
   }
 
   fn push(str: &str, value: &serde_yaml::Value) -> DataSet {

@@ -1,6 +1,6 @@
 use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
 use crate::data_file_parser::DataSet;
-use crate::expressions::Path;
+use crate::expressions::{Path, Expr, Predicate::Exists};
 use serde_yaml::{Value, Mapping};
 
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
@@ -31,6 +31,17 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
         output.push_str(&str);
       }
       Ok(output)
+    },
+    If(expr, body) => {
+      match expr.predicate {
+        Exists => {
+          if data.exists(&expr.path) {
+            visit_node(body, data)
+          } else {
+            Ok(String::new())
+          }
+        }
+      }
     },
     _ => Ok(String::from("not implemented yet")),
   }
@@ -172,7 +183,60 @@ mod tests {
 - link: Advanced Go
 ");
   }
-          
+
+  #[test]
+  fn visit_if_exists() {
+    let data = DataSet {
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("items".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("amount".to_string()), Value::String("2".to_string())),
+            ])
+          )),
+        ])
+      )
+    };
+    let tree = TemplateTree {
+      root: If(
+        Expr::from(Exists, vec!["items", "amount"]),
+        Box::new(Seq(vec![
+          Box::new(Text("We have ")),
+          Box::new(Var(Path::from(vec!["items", "amount"]))),
+          Box::new(Text(" items left."))
+        ]))
+      ),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "We have 2 items left.");
+  }
+
+  fn visit_if_not_exists() {
+    let data = DataSet {
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("items".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("count".to_string()), Value::String("2".to_string())),
+            ])
+          )),
+        ])
+      )
+    };
+    let tree = TemplateTree {
+      root: If(
+        Expr::from(Exists, vec!["items", "amount"]),
+        Box::new(Seq(vec![
+          Box::new(Text("We have ")),
+          Box::new(Var(Path::from(vec!["items", "amount"]))),
+          Box::new(Text(" items left."))
+        ]))
+      ),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "");
+  }
+
   fn unwrap(result: Result<String, String>) -> String {
     assert!(result.is_ok(), "Error visiting NodeTree: {:?}", result.err());
     result.unwrap()
