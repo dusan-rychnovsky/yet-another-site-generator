@@ -1,4 +1,4 @@
-# YASG (Yet Another Site Generator)
+# YASG - Yet Another (Static) Site Generator
 
 A generator of static HTML pages. Compiles a given HTML template and a given YAML data file to an HTML page with populated content.
 
