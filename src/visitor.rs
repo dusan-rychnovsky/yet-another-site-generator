@@ -237,6 +237,51 @@ mod tests {
     assert_eq!(result, "");
   }
 
+  #[test]
+  fn visit_if_collection() {
+    let data = DataSet {
+      data: Value::Mapping(
+        Mapping::from_iter(vec![
+          (Value::String("section".to_string()), Value::Mapping(
+            Mapping::from_iter(vec![
+              (Value::String("subsections".to_string()), Value::Sequence(vec![
+                Value::Mapping(Mapping::from_iter(vec![
+                  (Value::String("title".to_string()), Value::String("Subsection 1".to_string())),
+                ])),
+                Value::Mapping(Mapping::from_iter(vec![
+                  (Value::String("title".to_string()), Value::String("Subsection 2".to_string())),
+                ])),
+              ])),
+            ])
+          )),
+        ])
+      )
+    };
+    let tree = TemplateTree {
+      root: If(
+        Expr::from(Exists, vec!["section", "subsections"]),
+        Box::new(Seq(vec![
+          Box::new(Text("Subsections:\n")),
+          Box::new(ForEach(
+            "subsection",
+            Path::from(vec!["section", "subsections"]),
+            Box::new(Seq(vec![
+              Box::new(Text("- ")),
+              Box::new(Var(Path::from(vec!["subsection", "title"]))),
+              Box::new(Text("\n")),
+            ]))
+          )),
+        ]))
+      ),
+    };
+    let result = unwrap(visit(&tree, &data));
+    assert_eq!(result, "\
+Subsections:
+- Subsection 1
+- Subsection 2
+");
+  }
+
   fn unwrap(result: Result<String, String>) -> String {
     assert!(result.is_ok(), "Error visiting NodeTree: {:?}", result.err());
     result.unwrap()

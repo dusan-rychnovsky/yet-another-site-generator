@@ -1,0 +1,9 @@
+title: Hello World!
+backpack:
+  items:
+    - name: sleeping bag
+      weight: '1.5kg'
+    - name: tent
+      weight: '2.0kg'
+    - name: water bottle
+      weight: '0.5kg'

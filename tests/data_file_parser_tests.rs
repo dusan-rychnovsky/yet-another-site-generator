@@ -3,7 +3,7 @@ use std::option::Option::None;
 
 #[test]
 fn parse_loads_and_parses_data_file() {
-  let data = data_file_parser::parse("tests/data/data-go.yml");
+  let data = data_file_parser::parse("tests/data/go-data.yml");
 
   assert!(data.is_ok(), "Expected to parse data file successfully. Error: {:?}", data.err());
   let data = data.unwrap().data;

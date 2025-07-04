@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <title>[title]</title>
+  </head>
+  <body>
+    <h1>[title]</h1>
+    <p>This is a testing page.</p>
+    [if exists backpack.items]
+      <h2>Items in Backpack:</h2>
+      <ul>
+        [for item in backpack.items]
+          <li>[item.name] - weight: [item.weight]</li>
+        [endfor item]
+      </ul>
+    [endif]
+  </body>
+</html>

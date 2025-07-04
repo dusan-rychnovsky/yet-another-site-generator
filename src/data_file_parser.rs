@@ -2,6 +2,7 @@ use crate::expressions::Path;
 use std::fs;
 use serde_yaml;
 
+#[derive(Debug)]
 pub struct DataSet {
   pub data: serde_yaml::Value,
 }

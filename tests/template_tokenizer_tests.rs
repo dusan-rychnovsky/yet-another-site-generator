@@ -4,7 +4,7 @@ use std::fs;
 
 #[test]
 fn tokenize_template_go_html() {
-    let content = fs::read_to_string("tests/data/template-go.html")
+    let content = fs::read_to_string("tests/data/go-template.html")
       .unwrap_or_else(|e| panic!("Failed to read template file: {}", e));
 
     let tokens = template_tokenizer::tokenize(&content);
