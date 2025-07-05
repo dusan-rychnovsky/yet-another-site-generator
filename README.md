@@ -2,24 +2,42 @@
 
 A generator of static HTML pages. Compiles a given HTML template and a given YAML data file to an HTML page with populated content.
 
+Runs in two modes:
+
+* **Single-File mode**:  
+  Takes a single template- and a single data file and prints the result to standard output.
+* **Recursive mode**:  
+  Takes a source- and a destination directory. Traverses the source directory recursively, processes
+  each data file (i.e. `*.yml`) found and generates corresponding HTML files in the destination directory,
+  while preserving directory structure.
+  In recursive mode, each data file contains a root-level `template` field, which specifies the path to its corresponding template file.
+
+See examples below.
+
 ## How To
 
 ### Build
 
 ```
-git clone https://github.com/dusan-rychnovsky/yet-another-site-generator.git
-cd yet-another-site-generator
-cargo test
-cargo build --release
+$ git clone https://github.com/dusan-rychnovsky/yet-another-site-generator.git
+$ cd yet-another-site-generator
+$ cargo test
+$ cargo build --release
 ```
 
 ### Run
 
 ```
-./target/release/yasg [TEMPLATE-FILE] [DATA-FILE] > output.html
+// single-file mode
+$ ./target/release/yasg [TEMPLATE-FILE] [DATA-FILE] > output.html
+
+// recursive mode
+$ ./target/release/yasg -r [SRC-DIR] [DEST-DIR]
 ```
 
-## Example
+## Examples
+
+### Example #1: Generating a single file
 
 Consider this simple example.
 
