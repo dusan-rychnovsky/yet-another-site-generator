@@ -5,9 +5,9 @@ A generator of static HTML pages. Compiles a given HTML template and a given YAM
 Runs in two modes:
 
 * **Single-File mode**:  
-  Takes a single template- and a single data file and prints the result to standard output.
+  Takes a single template- and a single data-file and prints the result to standard output.
 * **Recursive mode**:  
-  Takes a source- and a destination directory. Traverses the source directory recursively, processes
+  Takes a source- and a destination-directory. Traverses the source directory recursively, processes
   each data file (i.e. `*.yml`) found and generates corresponding HTML files in the destination directory,
   while preserving directory structure.
   In recursive mode, each data file contains a root-level `template` field, which specifies the path to its corresponding template file.
