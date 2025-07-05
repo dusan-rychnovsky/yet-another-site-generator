@@ -1,7 +1,6 @@
 use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
 use crate::data_file_parser::DataSet;
-use crate::expressions::{Path, Expr, Predicate::Exists};
-use serde_yaml::{Value, Mapping};
+use crate::expressions::Predicate::Exists;
 
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
   visit_node(&tree.root, data)
@@ -49,6 +48,8 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use serde_yaml::{Value, Mapping};
+  use crate::expressions::{Path, Expr};
 
   #[test]
   fn visit_simple_text() {
