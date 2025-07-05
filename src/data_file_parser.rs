@@ -16,7 +16,7 @@ impl<'a> DataSet<'a> {
     DataSet { context: "", root: root }
   }
 
-  pub fn get_value(&self, path: &Path) -> Result<&str, String> {
+  pub fn get_str(&self, path: &Path) -> Result<&str, String> {
     let value = Self::locate(&self, path);
     match value {
       Some(value) => {
@@ -38,7 +38,14 @@ impl<'a> DataSet<'a> {
     match value {
       Some(value) => {
         match value.as_sequence() {
-          Some(seq) => Ok(seq.iter().map(|v| Self::branch(context, v)).collect()),
+          Some(seq) => Ok(
+            seq.iter()
+              .map(|v| DataSet {
+                context: context,
+                root: v,
+              })
+              .collect()
+          ),
           None => Err(
             format!("Path [{}] does not reference a sequence in data file.", path.segments.join("."))
           ),
@@ -74,13 +81,6 @@ impl<'a> DataSet<'a> {
       path.segments.iter().fold(Some(&self.root), |acc, segment| {
         acc.and_then(|v| v.get(segment))
       })
-    }
-  }
-
-  fn branch(str: &'a str, value: &'a serde_yaml::Value) -> DataSet<'a> {
-    DataSet {
-      context: str,
-      root: value,
     }
   }
 }

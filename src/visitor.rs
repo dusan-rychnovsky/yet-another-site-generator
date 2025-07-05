@@ -17,7 +17,7 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
       Ok(output)
     },
     Var(path) => {
-      data.get_value(path).map(String::from)
+      data.get_str(path).map(String::from)
     },
     Text(text) => {
       Ok(text.to_string())
