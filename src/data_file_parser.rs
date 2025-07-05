@@ -2,16 +2,20 @@ use crate::expressions::Path;
 use serde_yaml;
 
 #[derive(Debug)]
-pub struct DataSet {
-  pub data: serde_yaml::Value,
+pub struct DataSet<'a> {
+  pub context: &'a str,
+  pub root: &'a serde_yaml::Value
 }
 
-pub fn parse(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
-  let value: serde_yaml::Value = serde_yaml::from_str(input)?;
-  Ok(DataSet { data: value })
+pub fn parse(input :&str) -> Result<serde_yaml::Value, serde_yaml::Error> {
+  serde_yaml::from_str(input)
 }
 
-impl DataSet {
+impl<'a> DataSet<'a> {
+  pub fn from(root: &'a serde_yaml::Value) -> Self {
+    DataSet { context: "", root: root }
+  }
+
   pub fn get_value(&self, path: &Path) -> Result<&str, String> {
     let value = Self::locate(&self, path);
     match value {
@@ -29,12 +33,12 @@ impl DataSet {
     }
   }
 
-  pub fn list(&self, context: &str, path: &Path) -> Result<Vec<DataSet>, String> {
-    let value = Self::locate(&self, path);
+  pub fn list(&self, context: &'a str, path: &Path) -> Result<Vec<DataSet<'a>>, String> {
+    let value = self.locate(path);
     match value {
       Some(value) => {
         match value.as_sequence() {
-          Some(seq) => Ok(seq.iter().map(|v| Self::push(context, v)).collect()),
+          Some(seq) => Ok(seq.iter().map(|v| Self::branch(context, v)).collect()),
           None => Err(
             format!("Path [{}] does not reference a sequence in data file.", path.segments.join("."))
           ),
@@ -50,19 +54,33 @@ impl DataSet {
     Self::locate(&self, path).is_some()
   }
 
-  fn locate(&self, path: &Path) -> Option<&serde_yaml::Value> {
-    path.segments.iter().fold(Some(&self.data), |acc, segment| {
-      acc.and_then(|v| v.get(segment))
-    })
+  fn locate(&self, path: &Path) -> Option<&'a serde_yaml::Value> {
+    if !self.context.is_empty() {
+      if !path.segments.is_empty() && self.context == path.segments[0] {
+        let new_dataset = DataSet {
+          context: "",
+          root: self.root
+        };
+        let new_path = Path {
+          segments: path.segments[1..].to_vec()
+        };
+        new_dataset.locate(&new_path)
+      }
+      else {
+        None
+      }
+    }
+    else {
+      path.segments.iter().fold(Some(&self.root), |acc, segment| {
+        acc.and_then(|v| v.get(segment))
+      })
+    }
   }
 
-  fn push(str: &str, value: &serde_yaml::Value) -> DataSet {
+  fn branch(str: &'a str, value: &'a serde_yaml::Value) -> DataSet<'a> {
     DataSet {
-      data: serde_yaml::Value::Mapping(
-        serde_yaml::Mapping::from_iter(vec![
-          (serde_yaml::Value::String(str.to_string()), value.clone()), // TODO: can I get rid of clones?
-        ])
-      )
+      context: str,
+      root: value,
     }
   }
 }
@@ -91,7 +109,7 @@ page:
     let result = parse(content);
     assert!(result.is_ok(), "Expected to parse content successfully. Error: {:?}", result.err());
 
-    let doc = result.unwrap().data;
+    let doc = result.unwrap();
     assert_eq!(doc["page"]["title"], "Hra Go");
     assert_eq!(doc["page"]["crumbs"][0]["text"], "Domů");
     assert_eq!(doc["page"]["sections"][0]["title"], "Go klub Můstek");

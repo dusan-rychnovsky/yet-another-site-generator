@@ -10,8 +10,6 @@ fn parse_loads_and_parses_data_file() {
   let data = data_file_parser::parse(&content)
     .unwrap_or_else(|e| panic!("Failed to parse data file: {}", e));
 
-  let data = data.data;
-
   // title
   assert_eq!(data["title"], "Hra Go");
 

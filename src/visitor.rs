@@ -53,7 +53,7 @@ mod tests {
 
   #[test]
   fn visit_simple_text() {
-    let data = DataSet { data: Value::Null };
+    let data = DataSet::from(&Value::Null);
     let tree = TemplateTree {
       root: Text("Hello, world!"),
     };
@@ -63,13 +63,12 @@ mod tests {
 
   #[test]
   fn visit_var_with_simple_path() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("name".to_string()), Value::String("Julia".to_string())),
-        ])
-      )
-    };
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("name".to_string()), Value::String("Julia".to_string())),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -77,13 +76,14 @@ mod tests {
         Box::new(Text("!")),
       ]),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "Hello, Julia!");
   }
 
   #[test]
   fn visit_var_fails_if_data_entry_doesnt_exist() {
-    let data = DataSet { data: Value::Mapping(Mapping::new()) };
+    let data = Value::Mapping(Mapping::new());
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -91,24 +91,23 @@ mod tests {
         Box::new(Text("!")),
       ]),
     };
-    let err = visit(&tree, &data).unwrap_err();
+    let err = visit(&tree, &data_set).unwrap_err();
     assert!(err.contains("Path [name] is not defined in data file."), "Got error: {}", err);
   }
 
   #[test]
   fn visit_var_fails_if_data_entry_isnt_string() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("name".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("first".to_string()), Value::String("Julia".to_string())),
-              (Value::String("last".to_string()), Value::String("Doe".to_string())),
-            ])
-          )),
-        ])
-      )
-    };
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("name".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("first".to_string()), Value::String("Julia".to_string())),
+            (Value::String("last".to_string()), Value::String("Doe".to_string())),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
@@ -116,23 +115,22 @@ mod tests {
         Box::new(Text("!")),
       ]),
     };
-    let err = visit(&tree, &data).unwrap_err();
+    let err = visit(&tree, &data_set).unwrap_err();
     assert!(err.contains("Path [name] does not reference a string in data file."), "Got error: {}", err);
   }
 
   #[test]
   fn visit_var_with_multi_segment_path() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("section".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("title".to_string()), Value::String("Go Basics".to_string())),
-            ])
-          )),
-        ])
-      )
-    };
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("section".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("title".to_string()), Value::String("Go Basics".to_string())),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Section title: ")),
@@ -140,30 +138,29 @@ mod tests {
         Box::new(Text(".")),
       ]),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "Section title: Go Basics.");
   }
 
   #[test]
   fn visit_foreach() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("section".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("links".to_string()), Value::Sequence(vec![
-                Value::Mapping(Mapping::from_iter(vec![
-                  (Value::String("href".to_string()), Value::String("Go Basics".to_string())),
-                ])),
-                Value::Mapping(Mapping::from_iter(vec![
-                  (Value::String("href".to_string()), Value::String("Advanced Go".to_string())),
-                ])),
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("section".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("links".to_string()), Value::Sequence(vec![
+              Value::Mapping(Mapping::from_iter(vec![
+                (Value::String("href".to_string()), Value::String("Go Basics".to_string())),
               ])),
-            ])
-          )),
-        ])
-      )
-    };
+              Value::Mapping(Mapping::from_iter(vec![
+                (Value::String("href".to_string()), Value::String("Advanced Go".to_string())),
+              ])),
+            ])),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(ForEach(
@@ -177,7 +174,7 @@ mod tests {
         )),
       ]),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "\
 - link: Go Basics
 - link: Advanced Go
@@ -186,17 +183,16 @@ mod tests {
 
   #[test]
   fn visit_if_exists() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("items".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("amount".to_string()), Value::String("2".to_string())),
-            ])
-          )),
-        ])
-      )
-    };
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("items".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("amount".to_string()), Value::String("2".to_string())),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: If(
         Expr::from(Exists, vec!["items", "amount"]),
@@ -207,23 +203,22 @@ mod tests {
         ]))
       ),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "We have 2 items left.");
   }
 
   #[test]
   fn visit_if_not_exists() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("items".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("count".to_string()), Value::String("2".to_string())),
-            ])
-          )),
-        ])
-      )
-    };
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("items".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("count".to_string()), Value::String("2".to_string())),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: If(
         Expr::from(Exists, vec!["items", "amount"]),
@@ -234,30 +229,29 @@ mod tests {
         ]))
       ),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "");
   }
 
   #[test]
   fn visit_if_collection() {
-    let data = DataSet {
-      data: Value::Mapping(
-        Mapping::from_iter(vec![
-          (Value::String("section".to_string()), Value::Mapping(
-            Mapping::from_iter(vec![
-              (Value::String("subsections".to_string()), Value::Sequence(vec![
-                Value::Mapping(Mapping::from_iter(vec![
-                  (Value::String("title".to_string()), Value::String("Subsection 1".to_string())),
-                ])),
-                Value::Mapping(Mapping::from_iter(vec![
-                  (Value::String("title".to_string()), Value::String("Subsection 2".to_string())),
-                ])),
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("section".to_string()), Value::Mapping(
+          Mapping::from_iter(vec![
+            (Value::String("subsections".to_string()), Value::Sequence(vec![
+              Value::Mapping(Mapping::from_iter(vec![
+                (Value::String("title".to_string()), Value::String("Subsection 1".to_string())),
               ])),
-            ])
-          )),
-        ])
-      )
-    };
+              Value::Mapping(Mapping::from_iter(vec![
+                (Value::String("title".to_string()), Value::String("Subsection 2".to_string())),
+              ])),
+            ])),
+          ])
+        )),
+      ])
+    );
+    let data_set = DataSet::from(&data);
     let tree = TemplateTree {
       root: If(
         Expr::from(Exists, vec!["section", "subsections"]),
@@ -275,7 +269,7 @@ mod tests {
         ]))
       ),
     };
-    let result = unwrap(visit(&tree, &data));
+    let result = unwrap(visit(&tree, &data_set));
     assert_eq!(result, "\
 Subsections:
 - Subsection 1

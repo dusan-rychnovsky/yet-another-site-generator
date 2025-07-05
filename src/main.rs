@@ -1,3 +1,4 @@
+use data_file_parser::DataSet;
 use std::fs;
 
 pub mod data_file_parser;
@@ -18,7 +19,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   // println!("tree: {:#?}", template_tree);
 
   let data_content = fs::read_to_string(data_path)?;
-  let data_set = data_file_parser::parse(&data_content)?;
+  let data = data_file_parser::parse(&data_content)?;
+  let data_set = DataSet::from(&data);
   // println!("data: {:#?}", data_set);
 
   let result = visitor::visit(&template_tree, &data_set)?;
