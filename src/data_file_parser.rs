@@ -1,5 +1,4 @@
 use crate::expressions::Path;
-use std::fs;
 use serde_yaml;
 
 #[derive(Debug)]
@@ -7,12 +6,7 @@ pub struct DataSet {
   pub data: serde_yaml::Value,
 }
 
-pub fn parse(path: &str) -> Result<DataSet, Box<dyn std::error::Error>> {
-  let content = fs::read_to_string(path)?;
-  parse_content(&content)
-}
-
-pub fn parse_content(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
+pub fn parse(input :&str) -> Result<DataSet, Box<dyn std::error::Error>> {
   let value: serde_yaml::Value = serde_yaml::from_str(input)?;
   Ok(DataSet { data: value })
 }
@@ -93,7 +87,8 @@ page:
     - title: Go Magic
       labels: ENG. YouTube.
 ";
-    let result = parse_content(content);
+
+    let result = parse(content);
     assert!(result.is_ok(), "Expected to parse content successfully. Error: {:?}", result.err());
 
     let doc = result.unwrap().data;

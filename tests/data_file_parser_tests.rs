@@ -1,12 +1,16 @@
 use yasg::data_file_parser;
 use std::option::Option::None;
+use std::fs;
 
 #[test]
 fn parse_loads_and_parses_data_file() {
-  let data = data_file_parser::parse("tests/data/go-data.yml");
+  let content = fs::read_to_string("tests/data/go-data.yml")
+    .unwrap_or_else(|e| panic!("Failed to read data file: {}", e));
 
-  assert!(data.is_ok(), "Expected to parse data file successfully. Error: {:?}", data.err());
-  let data = data.unwrap().data;
+  let data = data_file_parser::parse(&content)
+    .unwrap_or_else(|e| panic!("Failed to parse data file: {}", e));
+
+  let data = data.data;
 
   // title
   assert_eq!(data["title"], "Hra Go");
