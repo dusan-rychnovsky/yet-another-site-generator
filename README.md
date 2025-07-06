@@ -214,8 +214,8 @@ As a result, `beef-stew.html` and `shopska-salad.html` files will be generated i
 ├── 📁 main/
 │   └── 📁 stews/
 │       └── 📄 beef-stew.html
-├── 📁 salads/
-│   └── 📄 shopska-salad.html
+└── 📁 salads/
+    └── 📄 shopska-salad.html
 ```
 
 The generated files should have following contents:
