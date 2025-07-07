@@ -1,4 +1,4 @@
-use crate::template_tokenizer::{self, TemplateToken};
+use crate::template_tokenizer::{TemplateToken};
 use crate::expressions::{Path, Expr};
 use std::option::Option::{self, Some, None};
 
@@ -16,13 +16,7 @@ pub enum TemplateNode<'a> {
   If (Expr<'a>, Box<TemplateNode<'a>>)
 }
 
-pub fn parse<'a>(input: &'a str) -> Result<TemplateTree<'a>, String> {
-  let tokens = template_tokenizer::tokenize(input)
-    .map_err(|e| format!("Failed to tokenize template: {}", e))?;
-  parse_tokens(&tokens)
-}
-
-pub fn parse_tokens<'a>(tokens: &[TemplateToken<'a>]) -> Result<TemplateTree<'a>, String> {
+pub fn parse<'a>(tokens: &[TemplateToken<'a>]) -> Result<TemplateTree<'a>, String> {
   let (nodes, _) = parse_nodes(tokens, 0, None)?;
   Ok(TemplateTree {
     root: TemplateNode::Seq(nodes),
@@ -92,22 +86,25 @@ mod tests {
   use super::*;
   use super::TemplateNode::*;
   use crate::expressions::{Path, Expr, Predicate::*};
+  use std::vec;
 
   #[test]
   fn parse_handles_empty_input() {
-    let result = parse("").unwrap();
+    let tokens = vec![]; // TODO: is it empty vector or a Text with empty string?
+    let result = parse(&tokens).unwrap();
     assert_eq!(result.root, Seq(Vec::new()));
   }
 
   #[test]
   fn parse_handles_simple_text() {
-    let input = "This is a simple text.";
-    let result = parse(input).unwrap();
+    let text = "This is a simple text.";
+    let tokens = vec![TemplateToken::Text(text)];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
         vec![
-          Box::new(Text(input))
+          Box::new(Text(text))
         ]
       )
     );
@@ -115,8 +112,14 @@ mod tests {
 
   #[test]
   fn parse_handles_text_with_variables() {
-    let input = "Hello, [name]! Welcome to [place.address].";
-    let result = parse(input).unwrap();
+    let tokens = vec![
+      TemplateToken::Text("Hello, "),
+      TemplateToken::Var(Path::from(vec!["name"])),
+      TemplateToken::Text("! Welcome to "),
+      TemplateToken::Var(Path::from(vec!["place", "address"])),
+      TemplateToken::Text(".")
+    ];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
@@ -133,11 +136,14 @@ mod tests {
 
   #[test]
   fn parse_handles_foreach() {
-    let input = "\
-[for section in sections]
-  Section. Title: [section.title]
-[endfor section]";
-    let result = parse(input).unwrap();
+    let tokens = vec![
+      TemplateToken::For("section", Path::from(vec!["sections"])),
+      TemplateToken::Text("\n  Section. Title: "),
+      TemplateToken::Var(Path::from(vec!["section", "title"])),
+      TemplateToken::Text("\n"),
+      TemplateToken::EndFor("section")
+    ];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
@@ -158,17 +164,18 @@ mod tests {
 
   #[test]
   fn parse_handles_nested_foreach() {
-    let input = "\
-[for section in sections]
-  <ul>
-    [for link in section.links]
-      <li>
-        Link: [link.href]
-      </li>
-    [endfor link]
-  </ul>
-[endfor section]";
-    let result = parse(input).unwrap();
+    let tokens = vec![
+      TemplateToken::For("section", Path::from(vec!["sections"])),
+      TemplateToken::Text("\n  <ul>\n    "),
+      TemplateToken::For("link", Path::from(vec!["section", "links"])),
+      TemplateToken::Text("\n      <li>\n        Link: "),
+      TemplateToken::Var(Path::from(vec!["link", "href"])),
+      TemplateToken::Text("\n      </li>\n    "),
+      TemplateToken::EndFor("link"),
+      TemplateToken::Text("\n  </ul>\n"),
+      TemplateToken::EndFor("section")
+    ];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
@@ -197,34 +204,38 @@ mod tests {
 
   #[test]
   fn parse_nested_foreach_with_incorrect_closing_order_fails() {
-    let input = "[for section in sections]
-      <ul>
-        [for link in section.links]
-          <li>
-            Link: [link.href]
-          </li>
-        [endfor section]
-      </ul>
-    [endfor link]";
     assert_invalid_syntax(
-      input,
+      &vec![
+        TemplateToken::For("section", Path::from(vec!["sections"])),
+        TemplateToken::Text("\n      <ul>\n        "),
+        TemplateToken::For("link", Path::from(vec!["section", "links"])),
+        TemplateToken::Text("\n          <li>\n            Link: "),
+        TemplateToken::Var(Path::from(vec!["link", "href"])),
+        TemplateToken::Text("\n          </li>\n        "),
+        TemplateToken::EndFor("section"),
+        TemplateToken::Text("\n      </ul>\n    "),
+        TemplateToken::EndFor("link")
+      ],
       "Unexpected token EndFor(\"section\") nested in Some(For(\"link\", Path { segments: [\"section\", \"links\"] }))."
     );
   }
 
   #[test]
   fn parse_endfor_without_for_fails() {
-    let input = "[endfor section]";
-    assert_invalid_syntax(input, "Unexpected token EndFor(\"section\") nested in None.");
+    assert_invalid_syntax(
+      &vec![TemplateToken::EndFor("section")],
+      "Unexpected token EndFor(\"section\") nested in None."
+    );
   }
 
   #[test]
   fn parse_handles_if_statements() {
-    let input = "\
-[if exists section.subsections]
-  Subsections exist.
-[endif]";
-    let result = parse(input).unwrap();
+    let tokens = vec![
+      TemplateToken::If(Expr::from(Exists, vec!["section", "subsections"])),
+      TemplateToken::Text("\n  Subsections exist.\n"),
+      TemplateToken::EndIf
+    ];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
@@ -242,15 +253,18 @@ mod tests {
 
   #[test]
   fn parse_handles_foreach_nested_in_if() {
-    let input = "\
-[if exists section.subsections]
-  <ul>
-    [for subsection in section.subsections]
-      <li>Subsection: [subsection.title]</li>
-    [endfor subsection]
-  </ul>
-[endif]";
-    let result = parse(input).unwrap();
+    let tokens = vec![
+      TemplateToken::If(Expr::from(Exists, vec!["section", "subsections"])),
+      TemplateToken::Text("\n  <ul>\n    "),
+      TemplateToken::For("subsection", Path::from(vec!["section", "subsections"])),
+      TemplateToken::Text("\n      <li>Subsection: "),
+      TemplateToken::Var(Path::from(vec!["subsection", "title"])),
+      TemplateToken::Text("</li>\n    "),
+      TemplateToken::EndFor("subsection"),
+      TemplateToken::Text("\n  </ul>\n"),
+      TemplateToken::EndIf
+    ];
+    let result = parse(&tokens).unwrap();
     assert_eq!(
       result.root,
       Seq(
@@ -278,29 +292,33 @@ mod tests {
 
   #[test]
   fn parse_with_incorrect_if_and_foreach_nesting_fails() {
-    let input = "\
-[if exists section.subsections]
-  <ul>
-    [for subsection in section.subsections]
-      <li>Subsection: [subsection.title]</li>
-    [endif]
-  </ul>
-[endfor subsection]";
     assert_invalid_syntax(
-      input,
+      &vec![
+        TemplateToken::If(Expr::from(Exists, vec!["section", "subsections"])),
+        TemplateToken::Text("\n  <ul>\n    "),
+        TemplateToken::For("subsection", Path::from(vec!["section", "subsections"])),
+        TemplateToken::Text("\n      <li>Subsection: "),
+        TemplateToken::Var(Path::from(vec!["subsection", "title"])),
+        TemplateToken::Text("</li>\n    "),
+        TemplateToken::EndIf, // This should be EndFor
+        TemplateToken::Text("\n  </ul>\n"),
+        TemplateToken::EndFor("subsection")
+      ],
       "Unexpected token EndIf nested in Some(For(\"subsection\", Path { segments: [\"section\", \"subsections\"] }))."
     );
   }
 
   #[test]
   fn parse_endif_without_if_fails() {
-    let input = "[endif]";
-    assert_invalid_syntax(input, "Unexpected token EndIf nested in None.");
+    assert_invalid_syntax(
+      &vec![TemplateToken::EndIf],
+      "Unexpected token EndIf nested in None."
+    );
   }
 
-  fn assert_invalid_syntax(input: &str, expected: &str) {
-    let err = parse(input).unwrap_err();
+  fn assert_invalid_syntax(tokens: &Vec<TemplateToken>, expected: &str) {
+    let err = parse(tokens).unwrap_err();
     assert!(err.contains(expected),
-      "Expected error for input '{}', got: {}", input, err);
+      "Expected error for input '{:#?}', got: {}", tokens, err);
   }
 }

@@ -98,7 +98,7 @@ fn process_recursive(src_root_path: &str, dst_root_path: &str) -> Result<(), Box
 fn process_file(template_path: &str, data_set: &DataSet) -> Result<String, Box<dyn std::error::Error>> {
   let template_content = fs::read_to_string(template_path)?;
   let template_tokens = template_tokenizer::tokenize(&template_content)?;
-  let template_tree = template_parser::parse_tokens(&template_tokens)?;
+  let template_tree = template_parser::parse(&template_tokens)?;
 
   let result = visitor::visit(&template_tree, data_set)?;
   Ok(result)
