@@ -29,7 +29,7 @@ $ cargo build --release
 
 ```
 // single-file mode
-$ ./target/release/yasg [TEMPLATE-FILE] [DATA-FILE] > output.html
+$ ./target/release/yasg [DATA-FILE] [TEMPLATE-FILE] > output.html
 
 // recursive mode
 $ ./target/release/yasg -r [SRC-DIR] [DEST-DIR]
@@ -82,7 +82,7 @@ backpack:
 Execute YASG:
 
 ```
-./yasg example-template.html example-data.yml > output.html
+./yasg example-data.yml example-template.html > output.html
 ```
 
 **Step #3:**  

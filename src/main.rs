@@ -1,8 +1,10 @@
+use config::{Config, Mode};
 use data_file_parser::DataSet;
 use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
 
+pub mod config;
 pub mod data_file_parser;
 pub mod template_parser;
 pub mod template_tokenizer;
@@ -12,39 +14,25 @@ pub mod visitor;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
   let args: Vec<String> = std::env::args().collect();
 
-  if args.len() < 2 {
-    print_usage_and_quit(&args);
-  }
-
-  // recursive mode
-  if args[1] == "-r" {
-    if args.len() != 4 {
-      print_usage_and_quit(&args);
+  let config = Config::parse(&args);
+  match config {
+    Ok(Config { mode: Mode::SingleFile { data_path, template_path } }) => {
+      process_single_file(data_path, template_path)?;
     }
-    let src_root_path = &args[2];
-    let dst_root_path = &args[3];
-    process_recursive(&src_root_path, dst_root_path)?;
-  }
-  // single file mode
-  else {
-    if args.len() != 3 {
-      print_usage_and_quit(&args);
+    Ok(Config { mode: Mode::Recursive { src_root_path, dst_root_path } }) => {
+      process_recursive(src_root_path, dst_root_path)?;
     }
-    let template_path = &args[1];
-    let data_path = &args[2];
-    process_single_file(template_path, data_path)?;
+    Err(err) => {
+      eprintln!("Error: {}", err);
+      eprintln!("{}", config::print_usage(&args));
+      std::process::exit(1);
+    }
   }
 
   Ok(())
 }
 
-fn print_usage_and_quit(args: &[String]) {
-  eprintln!("Usage: {} <template-file> <data-file>", args[0]);
-  eprintln!("   or: {} -r <source-dir> <dest-dir>", args[0]);
-  std::process::exit(1);
-}
-
-fn process_single_file(template_path: &str, data_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn process_single_file(data_path: &str, template_path: &str) -> Result<(), Box<dyn std::error::Error>> {
   let data_content = fs::read_to_string(data_path)?;
   let data = data_file_parser::parse(&data_content)?;
   let data_set = DataSet::from(&data);
