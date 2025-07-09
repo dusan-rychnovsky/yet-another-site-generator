@@ -1,0 +1,14 @@
+template: ../template.html
+title: Šopský salát
+ingredients:
+  - 1 okurka
+  - 2 rajčata
+  - 1 červená paprika
+  - 1 červená cibule
+  - 200 g sýra feta
+  - 50 ml olivového oleje
+  - sůl a pepř podle chuti
+instructions:
+  - Nakrájejte okurku, rajčata, papriku a červenou cibuli na kostičky.
+  - V míse smíchejte nakrájenou zeleninu.
+  - ...
