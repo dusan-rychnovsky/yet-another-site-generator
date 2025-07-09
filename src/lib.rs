@@ -9,15 +9,12 @@ pub mod template_parser;
 pub mod expressions;
 pub mod visitor;
 
-pub fn process_single_file(data_path: &str, template_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn process_single_file(data_path: &str, template_path: &str) -> Result<String, Box<dyn std::error::Error>> {
   let data_content = fs::read_to_string(data_path)?;
   let data = data_file_parser::parse(&data_content)?;
   let data_set = DataSet::from(&data);
 
-  let output = process_file(template_path, &data_set)?;
-  println!("{}", output);
-
-  Ok(())
+  process_file(template_path, &data_set)
 }
 
 pub fn process_recursive(src_root_path: &str, dst_root_path: &str) -> Result<(), Box<dyn std::error::Error>> {
