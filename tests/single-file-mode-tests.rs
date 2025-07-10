@@ -35,7 +35,7 @@ fn single_file_mode_processes_given_data_file() {
     <h2>Příprava:</h2>
     <ul>
     
-      <li>Nakrájejte okurku, rajčata, papriku a červenou cibuli na kostičky.</li>
+      <li>Nakrájejte <em>okurku</em>, <em>rajčata</em>, <em>papriku</em> a <em>červenou cibuli</em> na kostičky.</li>
     
       <li>V míse smíchejte nakrájenou zeleninu.</li>
     

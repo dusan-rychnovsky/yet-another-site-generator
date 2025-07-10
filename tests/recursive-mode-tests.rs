@@ -46,7 +46,7 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
     <h2>Příprava:</h2>
     <ul>
     
-      <li>Nakrájejte okurku, rajčata, papriku a červenou cibuli na kostičky.</li>
+      <li>Nakrájejte <em>okurku</em>, <em>rajčata</em>, <em>papriku</em> a <em>červenou cibuli</em> na kostičky.</li>
     
       <li>V míse smíchejte nakrájenou zeleninu.</li>
     
@@ -95,9 +95,9 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
     <h2>Příprava:</h2>
     <ul>
     
-      <li>Na pánvi rozehřejte olej a osmahněte na něm nakrájenou cibuli dozlatova.</li>
+      <li>Na pánvi rozehřejte olej a osmahněte na něm nakrájenou <em>cibuli</em> dozlatova.</li>
     
-      <li>Přidejte nakrájené hovězí maso a opékejte, dokud nezhnědne ze všech stran.</li>
+      <li>Přidejte nakrájené <em>hovězí maso</em> a opékejte, dokud nezhnědne ze všech stran.</li>
     
       <li>...</li>
     
