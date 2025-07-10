@@ -70,11 +70,11 @@ Create files `example-template.html` and `example-data.yml` with following conte
 title: Hello World!
 backpack:
   items:
-    - name: sleeping bag
+    - name: sleeping *bag*
       weight: '1.5kg'
     - name: tent
       weight: '2.0kg'
-    - name: water bottle
+    - name: water *bottle*
       weight: '0.5kg'
 ```
 
@@ -99,9 +99,9 @@ The result will be:
     <p>This is a testing page.</p>
     <h2>Items in Backpack:</h2>
     <ul>
-      <li>sleeping bag - weight: 1.5kg</li>
+      <li>sleeping <em>bag</em> - weight: 1.5kg</li>
       <li>tent - weight: 2.0kg</li>
-      <li>water bottle - weight: 0.5kg</li>
+      <li>water <em>bottle</em> - weight: 0.5kg</li>
     </ul>
   </body>
 </html>
