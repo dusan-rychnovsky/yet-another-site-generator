@@ -17,7 +17,9 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
       Ok(output)
     },
     Var(path) => {
-      data.get_str(path).map(String::from)
+      let val = data.get_str(path)?;
+      let val = replace_asterix(&val)?;
+      Ok(val)
     },
     Text(text) => {
       Ok(text.to_string())
@@ -42,6 +44,28 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
         }
       }
     }
+  }
+}
+
+fn replace_asterix(text: &str) -> Result<String, &str> {
+  let mut result = String::new();
+  let mut in_asterix = false;
+  for c in text.chars() {
+    if c == '*' {
+      if !in_asterix {
+        result.push_str("<em>");
+      } else {
+        result.push_str("</em>");
+      }
+      in_asterix = !in_asterix;
+    } else {
+      result.push(c);
+    }
+  }
+  if in_asterix {
+    Err("Encountered unmatched *.")
+  } else {
+    Ok(result)
   }
 }
 
@@ -275,6 +299,29 @@ Subsections:
 - Subsection 1
 - Subsection 2
 ");
+  }
+
+  #[test]
+  fn visit_var_with_asterix() {
+    let data = Value::Mapping(
+      Mapping::from_iter(vec![
+        (Value::String("text".to_string()), Value::String("\
+Podcast o čaji a zemích dálného východu. Formou rozhovorů *Lindy Mannelové* s *Hubertem Hátle*,\
+majitelem Dobré čajovny na Václavském náměstí v Praze.".to_string())),
+      ])
+    );
+    let data_set = DataSet::from(&data);
+    let tree = TemplateTree {
+      root: Seq(vec![
+        Box::new(Text("<p>")),
+        Box::new(Var(Path::from(vec!["text"]))),
+        Box::new(Text("</p>")),
+      ]),
+    };
+    let result = unwrap(visit(&tree, &data_set));
+    assert_eq!(result, "\
+<p>Podcast o čaji a zemích dálného východu. Formou rozhovorů <em>Lindy Mannelové</em> s <em>Hubertem Hátle</em>,\
+majitelem Dobré čajovny na Václavském náměstí v Praze.</p>");
   }
 
   fn unwrap(result: Result<String, String>) -> String {
