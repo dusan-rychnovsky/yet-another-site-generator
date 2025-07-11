@@ -10,8 +10,10 @@ pub mod expressions;
 pub mod visitor;
 
 pub fn process_single_file(data_path: &str, template_path: &str) -> Result<String, Box<dyn std::error::Error>> {
-  let data_content = fs::read_to_string(data_path)?;
-  let data = data_file_parser::parse(&data_content)?;
+  let data_content = fs::read_to_string(data_path)
+    .map_err(|e| format!("Failed to read data file content. File: '{}'. Error: '{}'.", data_path, e))?;
+  let data = data_file_parser::parse(&data_content)
+    .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_path, e))?;
   let data_set = DataSet::from(&data);
 
   process_file(template_path, &data_set)
@@ -58,8 +60,10 @@ pub fn process_recursive(src_root_path: &str, dst_root_path: &str) -> Result<(),
 }
 
 fn process_file(template_path: &str, data_set: &DataSet) -> Result<String, Box<dyn std::error::Error>> {
-  let template_content = fs::read_to_string(template_path)?;
-  let template_tokens = template_tokenizer::tokenize(&template_content)?;
+  let template_content = fs::read_to_string(template_path)
+    .map_err(|e| format!("Failed to read template file content. File: '{}'. Error: '{}'.", template_path, e))?;
+  let template_tokens = template_tokenizer::tokenize(&template_content)
+    .map_err(|e| format!("Failed to parse template file content. File: '{}'. Error: '{}'.", template_path, e))?;
   let template_tree = template_parser::parse(&template_tokens)?;
 
   let result = visitor::visit(&template_tree, data_set)?;
