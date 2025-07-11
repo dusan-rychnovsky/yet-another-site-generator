@@ -13,7 +13,7 @@ pub fn parse(input :&str) -> Result<serde_yaml::Value, serde_yaml::Error> {
 
 impl<'a> DataSet<'a> {
   pub fn from(root: &'a serde_yaml::Value) -> Self {
-    DataSet { context: "", root: root }
+    DataSet { context: "", root }
   }
 
   pub fn get_str(&self, path: &Path) -> Result<&str, String> {
@@ -41,7 +41,7 @@ impl<'a> DataSet<'a> {
           Some(seq) => Ok(
             seq.iter()
               .map(|v| DataSet {
-                context: context,
+                context,
                 root: v,
               })
               .collect()

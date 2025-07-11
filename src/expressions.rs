@@ -44,7 +44,7 @@ impl<'a> Expr<'a> {
 
   pub fn from(predicate: Predicate, segments: Vec<&'a str>) -> Self {
     Expr {
-      predicate: predicate,
+      predicate,
       path: Path::from(segments)
     }
   }
