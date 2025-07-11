@@ -6,12 +6,12 @@ pub struct Config<'a> {
 #[derive(Debug)]
 pub enum Mode<'a> {
   SingleFile {
-    data_path: &'a str,
-    template_path: &'a str,
+    data_file_path: &'a str,
+    template_file_path: &'a str,
   },
   Recursive {
-    src_root_path: &'a str,
-    dst_root_path: &'a str,
+    src_dir_path: &'a str,
+    dst_dir_path: &'a str,
   },
 }
 
@@ -37,8 +37,8 @@ impl<'a> Config<'a> {
       else {
         Ok (Config {
           mode: Mode::Recursive {
-            src_root_path: &args[2],
-            dst_root_path: &args[3],
+            src_dir_path: &args[2],
+            dst_dir_path: &args[3],
           },
         })
       }
@@ -50,8 +50,8 @@ impl<'a> Config<'a> {
       else {
         Ok(Config {
           mode: Mode::SingleFile {
-            data_path: &args[1],
-            template_path: &args[2],
+            data_file_path: &args[1],
+            template_file_path: &args[2],
           },
         })
       }
@@ -69,9 +69,9 @@ mod tests {
     let config = Config::parse(&args)
       .unwrap_or_else(|e| panic!("Failed to parse config: {}", e));
     match config.mode {
-      Mode::SingleFile { data_path , template_path } => {
-        assert_eq!(data_path, "data.yaml");
-        assert_eq!(template_path, "template.html");
+      Mode::SingleFile { data_file_path , template_file_path } => {
+        assert_eq!(data_file_path, "data.yaml");
+        assert_eq!(template_file_path, "template.html");
       }
       _ => panic!("Expected SingleFile mode, got {:#?}", config),
     }
@@ -99,9 +99,9 @@ mod tests {
     let config = Config::parse(&args)
       .unwrap_or_else(|e| panic!("Failed to parse config: {}", e));
     match config.mode {
-      Mode::Recursive { src_root_path, dst_root_path } => {
-        assert_eq!(src_root_path, "src");
-        assert_eq!(dst_root_path, "dst");
+      Mode::Recursive { src_dir_path, dst_dir_path } => {
+        assert_eq!(src_dir_path, "src");
+        assert_eq!(dst_dir_path, "dst");
       },
       _ => panic!("Expected Recursive mode, got {:#?}", config),
     }

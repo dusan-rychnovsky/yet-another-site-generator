@@ -4,20 +4,20 @@ use std::fs;
 #[test]
 fn recursive_mode_processes_all_files_in_a_given_directory() {
     
-  let src_root_path = "tests/data/recipes";
+  let src_dir_path = "tests/data/recipes";
 
   let temp_dir = TempDir::new().unwrap();
-  let dst_root_path = temp_dir.path().join("recipes");
+  let dst_dir_path = temp_dir.path().join("recipes");
 
-  fs::remove_dir_all(&dst_root_path).ok();
-  fs::create_dir_all(&dst_root_path).expect("Failed to create output directory");
+  fs::remove_dir_all(&dst_dir_path).ok();
+  fs::create_dir_all(&dst_dir_path).expect("Failed to create output directory");
 
-  let result = yasg::process_recursive(src_root_path, dst_root_path.to_str().unwrap());
+  let result = yasg::process_recursive(src_dir_path, dst_dir_path.to_str().unwrap());
   assert!(result.is_ok(), "Error processing recipes: {:?}", result.err());
 
-  let salad_file = dst_root_path.join("salads/shopska-salad.html");
-  let salad_file_content = fs::read_to_string(&salad_file)
-    .unwrap_or_else(|e| panic!("Failed to read file {}: {}", salad_file.display(), e));
+  let salad_file_path = dst_dir_path.join("salads/shopska-salad.html");
+  let salad_file_content = fs::read_to_string(&salad_file_path)
+    .unwrap_or_else(|e| panic!("Failed to read file {}: {}", salad_file_path.display(), e));
   assert_eq!("\
 <!DOCTYPE html>
 <html lang=\"en\">
@@ -59,9 +59,9 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
 ",
   salad_file_content);
 
-  let stew_file = dst_root_path.join("main/stews/beef-stew.html");
-  let stew_file_content = fs::read_to_string(&stew_file)
-    .unwrap_or_else(|e| panic!("Failed to read file {}: {}", stew_file.display(), e));
+  let stew_file_path = dst_dir_path.join("main/stews/beef-stew.html");
+  let stew_file_content = fs::read_to_string(&stew_file_path)
+    .unwrap_or_else(|e| panic!("Failed to read file {}: {}", stew_file_path.display(), e));
   assert_eq!("\
 <!DOCTYPE html>
 <html lang=\"en\">

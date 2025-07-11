@@ -12,12 +12,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let config = Config::parse(&args);
   match config {
-    Ok(Config { mode: Mode::SingleFile { data_path, template_path } }) => {
-      let result = yasg::process_single_file(data_path, template_path)?;
+    Ok(Config { mode: Mode::SingleFile { data_file_path, template_file_path } }) => {
+      let result = yasg::process_single_file(data_file_path, template_file_path)?;
       println!("{}", result);
     }
-    Ok(Config { mode: Mode::Recursive { src_root_path, dst_root_path } }) => {
-      yasg::process_recursive(src_root_path, dst_root_path)?;
+    Ok(Config { mode: Mode::Recursive { src_dir_path, dst_dir_path } }) => {
+      yasg::process_recursive(src_dir_path, dst_dir_path)?;
     }
     Err(err) => {
       eprintln!("Error: {}", err);

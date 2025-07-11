@@ -4,7 +4,7 @@ fn single_file_mode_processes_given_data_file() {
   let data_file_path = "tests/data/recipes/salads/shopska-salad.yml";
   let template_file_path = "tests/data/recipes/template.html";
 
-  let result = yasg::process_single_file(data_file_path,template_file_path)
+  let result = yasg::process_single_file(data_file_path, template_file_path)
     .unwrap_or_else(|e| panic!("Error processing shopska-salad.yaml: {:?}", e));
 
   assert_eq!("\
