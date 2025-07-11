@@ -109,3 +109,45 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
 ",
   stew_file_content);
 }
+
+#[test]
+fn process_recursive_fails_if_src_dir_does_not_exist() {
+  assert_process_recursive_fails_with_error(
+    "tests/data/non-existing-dir",
+    "tests/data",
+    "Failed to load src directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_src_dir_is_not_a_directory() {
+  assert_process_recursive_fails_with_error(
+    "tests/data/recipes/salads/shopska-salad.yml",
+    "tests/data",
+    "Failed to load src directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
+  );
+}
+
+// TODO: data file doesn't have template path
+// TODO: data file points to a template path that doesn't exist
+// TODO: dest dir doesn't exist
+// TODO: dest dir is not a directory
+// TODO: data file can't be parsed
+// TODO: template file can't be parsed
+
+fn assert_process_recursive_fails_with_error(
+  src_dir_path: &str,
+  dst_dir_path: &str,
+  expected_error_prefix: &str
+) {
+  let result = yasg::process_recursive(src_dir_path, dst_dir_path);
+  assert!(result.is_err(), "Expected process_recursive to fail for src dir: '{}' and dst dir: '{}'.", src_dir_path, dst_dir_path);
+
+  let error = result.unwrap_err().to_string();
+  assert!(
+    error.starts_with(expected_error_prefix),
+    "Expected error to start with '{}', but got: '{}'",
+    expected_error_prefix,
+    error
+  );
+}

@@ -22,7 +22,10 @@ pub fn process_single_file(data_file_path: &str, template_file_path: &str) -> Re
 pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
   let root = Path::new(src_dir_path);
   if !root.exists() {
-    return Err(format!("Root path does not exist: {}", src_dir_path).into());
+    return Err(format!("Failed to load src directory. Dir: '{}'. Error: 'Path does not exist.'.", src_dir_path).into());
+  }
+  if !root.is_dir() {
+    return Err(format!("Failed to load src directory. Dir: '{}'. Error: 'Path is not a directory.'.", src_dir_path).into());
   }
 
   for entry in WalkDir::new(root)
