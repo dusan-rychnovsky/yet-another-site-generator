@@ -19,7 +19,8 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
   let salad_file_content = fs::read_to_string(&salad_file)
     .unwrap_or_else(|e| panic!("Failed to read file {}: {}", salad_file.display(), e));
   assert_eq!("\
-<html>
+<!DOCTYPE html>
+<html lang=\"en\">
   <head>
     <title>Recept na: Šopský salát</title>
   </head>
@@ -62,7 +63,8 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
   let stew_file_content = fs::read_to_string(&stew_file)
     .unwrap_or_else(|e| panic!("Failed to read file {}: {}", stew_file.display(), e));
   assert_eq!("\
-<html>
+<!DOCTYPE html>
+<html lang=\"en\">
   <head>
     <title>Recept na: Dušené hovězí</title>
   </head>

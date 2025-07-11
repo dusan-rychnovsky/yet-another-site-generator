@@ -8,7 +8,8 @@ fn single_file_mode_processes_given_data_file() {
     .unwrap_or_else(|e| panic!("Error processing shopska-salad.yaml: {:?}", e));
 
   assert_eq!("\
-<html>
+<!DOCTYPE html>
+<html lang=\"en\">
   <head>
     <title>Recept na: Šopský salát</title>
   </head>
