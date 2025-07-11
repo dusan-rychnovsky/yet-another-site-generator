@@ -55,7 +55,7 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
             }
           },
           _ => ()
-        };
+        }
         return Err(format!("Unexpected token EndFor(\"{}\") nested in {:?}.", var, context));
       },
       TemplateToken::If(cond) => {
