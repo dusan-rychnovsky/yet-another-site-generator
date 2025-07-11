@@ -1,3 +1,9 @@
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=dusan-rychnovsky_yet-another-site-generator&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=dusan-rychnovsky_yet-another-site-generator)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=dusan-rychnovsky_yet-another-site-generator&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=dusan-rychnovsky_yet-another-site-generator)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=dusan-rychnovsky_yet-another-site-generator&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=dusan-rychnovsky_yet-another-site-generator)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=dusan-rychnovsky_yet-another-site-generator&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=dusan-rychnovsky_yet-another-site-generator)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=dusan-rychnovsky_yet-another-site-generator&metric=bugs)](https://sonarcloud.io/summary/new_code?id=dusan-rychnovsky_yet-another-site-generator)  
+
 # YASG - Yet Another (Static) Site Generator
 
 A generator of static HTML pages. Compiles a given HTML template- and a given YAML data-file to an HTML page with populated content.
