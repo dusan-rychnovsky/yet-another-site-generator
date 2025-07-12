@@ -166,8 +166,25 @@ fn process_recursive_fails_if_template_file_does_not_exist() {
   );
 }
 
-// TODO: data file can't be parsed
-// TODO: template file can't be parsed
+#[test]
+fn process_recursive_fails_if_data_file_is_not_a_valid_yaml() {
+  let temp_dir = TempDir::new().unwrap();
+  assert_process_recursive_fails_with_error(
+    "tests/data/invalid-files/data-with-syntax-error/",
+    temp_dir.path().to_str().unwrap(),
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: 'mapping values are not allowed in this context"
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_template_file_is_not_valid() {
+  let temp_dir = TempDir::new().unwrap();
+  assert_process_recursive_fails_with_error(
+    "tests/data/invalid-files/data-with-template-with-syntax-error/",
+    temp_dir.path().to_str().unwrap(),
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Error: 'Failed to parse template file content. File: 'tests/data/invalid-files/"
+  );
+}
 
 fn assert_process_recursive_fails_with_error(
   src_dir_path: &str,

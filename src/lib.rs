@@ -30,8 +30,10 @@ pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), B
     .filter(|e| e.path().extension().map_or(false, |ext| ext == "yml"))
     {
       let data_file_path = entry.path();
-      let data_file_content = fs::read_to_string(data_file_path)?;
-      let data = data_file_parser::parse(&data_file_content)?;
+      let data_file_content = fs::read_to_string(data_file_path)
+        .map_err(|e| format!("Failed to load data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
+      let data = data_file_parser::parse(&data_file_content)
+        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
       let data_set = DataSet::from(&data);
 
       let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))
