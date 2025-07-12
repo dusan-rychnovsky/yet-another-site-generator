@@ -20,15 +20,10 @@ pub fn process_single_file(data_file_path: &str, template_file_path: &str) -> Re
 }
 
 pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-  let root = Path::new(src_dir_path);
-  if !root.exists() {
-    return Err(format!("Failed to load src directory. Dir: '{}'. Error: 'Path does not exist.'.", src_dir_path).into());
-  }
-  if !root.is_dir() {
-    return Err(format!("Failed to load src directory. Dir: '{}'. Error: 'Path is not a directory.'.", src_dir_path).into());
-  }
+  check_dir_exists(src_dir_path)?;
+  check_dir_exists(dst_dir_path)?;
 
-  for entry in WalkDir::new(root)
+  for entry in WalkDir::new(src_dir_path)
     .into_iter()
     .filter_map(|e| e.ok())
     .filter(|e| e.file_type().is_file())
@@ -59,6 +54,17 @@ pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), B
       println!("Generated: {:?}", output_path);
   }
 
+  Ok(())
+}
+
+fn check_dir_exists(path: &str) -> Result<(), String> {
+  let path = Path::new(path);
+  if !path.exists() {
+    return Err(format!("Failed to load directory. Dir: '{}'. Error: 'Path does not exist.'.", path.display()));
+  }
+  if !path.is_dir() {
+    return Err(format!("Failed to load directory. Dir: '{}'. Error: 'Path is not a directory.'.", path.display()));
+  }
   Ok(())
 }
 

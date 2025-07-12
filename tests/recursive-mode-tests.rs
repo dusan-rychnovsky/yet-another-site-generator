@@ -115,7 +115,7 @@ fn process_recursive_fails_if_src_dir_does_not_exist() {
   assert_process_recursive_fails_with_error(
     "tests/data/non-existing-dir",
     "tests/data",
-    "Failed to load src directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
+    "Failed to load directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
   );
 }
 
@@ -124,14 +124,30 @@ fn process_recursive_fails_if_src_dir_is_not_a_directory() {
   assert_process_recursive_fails_with_error(
     "tests/data/recipes/salads/shopska-salad.yml",
     "tests/data",
-    "Failed to load src directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
+    "Failed to load directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_dst_dir_does_not_exist() {
+  assert_process_recursive_fails_with_error(
+    "tests/data/recipes",
+    "tests/data/non-existing-dir",
+    "Failed to load directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_dst_dir_is_not_a_directory() {
+  assert_process_recursive_fails_with_error(
+    "tests/data/recipes",
+    "tests/data/recipes/salads/shopska-salad.yml",
+    "Failed to load directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
   );
 }
 
 // TODO: data file doesn't have template path
 // TODO: data file points to a template path that doesn't exist
-// TODO: dest dir doesn't exist
-// TODO: dest dir is not a directory
 // TODO: data file can't be parsed
 // TODO: template file can't be parsed
 
