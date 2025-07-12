@@ -9,17 +9,7 @@ pub mod template_parser;
 pub mod expressions;
 pub mod visitor;
 
-pub fn process_single_file(data_file_path: &str, template_file_path: &str) -> Result<String, Box<dyn std::error::Error>> {
-  let data_content = fs::read_to_string(data_file_path)
-    .map_err(|e| format!("Failed to read data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
-  let data = data_file_parser::parse(&data_content)
-    .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
-  let data_set = DataSet::from(&data);
-
-  process_file(template_file_path, &data_set)
-}
-
-pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn populate_all_files(src_dir_path: &str, dst_dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
   check_dir_exists(src_dir_path)?;
   check_dir_exists(dst_dir_path)?;
 
@@ -30,19 +20,7 @@ pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), B
     .filter(|e| e.path().extension().map_or(false, |ext| ext == "yml"))
     {
       let data_file_path = entry.path();
-      let data_file_content = fs::read_to_string(data_file_path)
-        .map_err(|e| format!("Failed to load data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
-      let data = data_file_parser::parse(&data_file_content)
-        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
-      let data_set = DataSet::from(&data);
-
-      let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))
-        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
-      let parent_path = data_file_path.parent().unwrap();
-      let template_file_path = parent_path.join(template_file_path);
-
-      let output = process_file(template_file_path.to_str().unwrap(), &data_set)
-        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
+      let output = populate_file(data_file_path.to_str().unwrap(), None)?;
 
       let relative_path = data_file_path.strip_prefix(src_dir_path)
         .map_err(|e| format!("Failed to resolve data file relative path: {}", e))?;
@@ -72,13 +50,30 @@ fn check_dir_exists(path: &str) -> Result<(), String> {
   Ok(())
 }
 
-fn process_file(template_file_path: &str, data_set: &DataSet) -> Result<String, Box<dyn std::error::Error>> {
-  let template_file_content = fs::read_to_string(template_file_path)
-    .map_err(|e| format!("Failed to read template file content. File: '{}'. Error: '{}'.", template_file_path, e))?;
+pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
+
+  let data_content = fs::read_to_string(data_file_path)
+    .map_err(|e| format!("Failed to read data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
+  let data = data_file_parser::parse(&data_content)
+    .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
+  let data_set = DataSet::from(&data);
+
+  let template_file_path = if let Some(template_file_path) = template_file_path {
+    template_file_path.to_string()
+  }
+  else {
+    let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))
+      .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
+    let parent_path = Path::new(data_file_path).parent().unwrap();
+    parent_path.join(template_file_path).to_string_lossy().to_string()
+  };
+
+  let template_file_content = fs::read_to_string(&template_file_path)
+    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to read template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
   let template_tokens = template_tokenizer::tokenize(&template_file_content)
-    .map_err(|e| format!("Failed to parse template file content. File: '{}'. Error: '{}'.", template_file_path, e))?;
+    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
   let template_tree = template_parser::parse(&template_tokens)?;
 
-  let result = visitor::visit(&template_tree, data_set)?;
+  let result = visitor::visit(&template_tree, &data_set)?;
   Ok(result)
 }

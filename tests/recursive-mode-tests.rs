@@ -3,7 +3,7 @@ use std::fs;
 
 #[test]
 fn recursive_mode_processes_all_files_in_a_given_directory() {
-    
+
   let src_dir_path = "tests/data/recipes";
 
   let temp_dir = TempDir::new().unwrap();
@@ -12,7 +12,7 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
   fs::remove_dir_all(&dst_dir_path).ok();
   fs::create_dir_all(&dst_dir_path).expect("Failed to create output directory");
 
-  let result = yasg::process_recursive(src_dir_path, dst_dir_path.to_str().unwrap());
+  let result = yasg::populate_all_files(src_dir_path, dst_dir_path.to_str().unwrap());
   assert!(result.is_ok(), "Error processing recipes: {:?}", result.err());
 
   let salad_file_path = dst_dir_path.join("salads/shopska-salad.html");
@@ -162,7 +162,7 @@ fn process_recursive_fails_if_template_file_does_not_exist() {
   assert_process_recursive_fails_with_error(
     "tests/data/invalid-files/data-with-non-existing-template/",
     temp_dir.path().to_str().unwrap(),
-    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Error: 'Failed to read template file content. File: 'tests/data/invalid-files/"
+    "Failed to populate data file. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Failed to read template file content. File: 'tests/data/invalid-files/"
   );
 }
 
@@ -182,7 +182,7 @@ fn process_recursive_fails_if_template_file_is_not_valid() {
   assert_process_recursive_fails_with_error(
     "tests/data/invalid-files/data-with-template-with-syntax-error/",
     temp_dir.path().to_str().unwrap(),
-    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Error: 'Failed to parse template file content. File: 'tests/data/invalid-files/"
+    "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/"
   );
 }
 
@@ -191,7 +191,7 @@ fn assert_process_recursive_fails_with_error(
   dst_dir_path: &str,
   expected_error_prefix: &str
 ) {
-  let result = yasg::process_recursive(src_dir_path, dst_dir_path);
+  let result = yasg::populate_all_files(src_dir_path, dst_dir_path);
   assert!(result.is_err(), "Expected process_recursive to fail for src dir: '{}' and dst dir: '{}'.", src_dir_path, dst_dir_path);
 
   let error = result.unwrap_err().to_string();
