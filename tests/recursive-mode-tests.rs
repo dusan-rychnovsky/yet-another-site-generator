@@ -146,8 +146,26 @@ fn process_recursive_fails_if_dst_dir_is_not_a_directory() {
   );
 }
 
-// TODO: data file doesn't have template path
-// TODO: data file points to a template path that doesn't exist
+#[test]
+fn process_recursive_fails_if_data_file_does_not_have_template_path() {
+  let temp_dir = TempDir::new().unwrap();
+  assert_process_recursive_fails_with_error(
+    "tests/data/invalid-files/data-without-template/",
+    temp_dir.path().to_str().unwrap(),
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-without-template/invalid-data.yml'. Error: 'Path [template] is not defined in data file.'"
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_template_file_does_not_exist() {
+  let temp_dir = TempDir::new().unwrap();
+  assert_process_recursive_fails_with_error(
+    "tests/data/invalid-files/data-with-non-existing-template/",
+    temp_dir.path().to_str().unwrap(),
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Error: 'Failed to read template file content. File: 'tests/data/invalid-files/data-with-non-existing-template\\../template.html'. Error: "
+  );
+}
+
 // TODO: data file can't be parsed
 // TODO: template file can't be parsed
 

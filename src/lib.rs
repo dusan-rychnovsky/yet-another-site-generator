@@ -34,11 +34,13 @@ pub fn process_recursive(src_dir_path: &str, dst_dir_path: &str) -> Result<(), B
       let data = data_file_parser::parse(&data_file_content)?;
       let data_set = DataSet::from(&data);
 
-      let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))?;
+      let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))
+        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
       let parent_path = data_file_path.parent().unwrap();
       let template_file_path = parent_path.join(template_file_path);
 
-      let output = process_file(template_file_path.to_str().unwrap(), &data_set)?;
+      let output = process_file(template_file_path.to_str().unwrap(), &data_set)
+        .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path.to_str().unwrap(), e))?;
 
       let relative_path = data_file_path.strip_prefix(src_dir_path)
         .map_err(|e| format!("Failed to resolve data file relative path: {}", e))?;
