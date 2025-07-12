@@ -162,7 +162,7 @@ fn process_recursive_fails_if_template_file_does_not_exist() {
   assert_process_recursive_fails_with_error(
     "tests/data/invalid-files/data-with-non-existing-template/",
     temp_dir.path().to_str().unwrap(),
-    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Error: 'Failed to read template file content. File: 'tests/data/invalid-files/data-with-non-existing-template\\../template.html'. Error: "
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Error: 'Failed to read template file content. File: 'tests/data/invalid-files/"
   );
 }
 

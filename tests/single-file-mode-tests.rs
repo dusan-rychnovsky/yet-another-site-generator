@@ -70,9 +70,9 @@ fn process_single_file_fails_if_data_file_does_not_exist() {
 #[test]
 fn process_single_file_fails_if_data_file_is_not_a_valid_yaml() {
   assert_process_single_file_fails_with_error(
-    "tests/data/invalid-files/invalid-data.yml",
+    "tests/data/invalid-files/data-with-syntax-error/invalid-data.yml",
     "tests/data/recipes/template.html",
-    "Failed to parse data file content. File: 'tests/data/invalid-files/invalid-data.yml'. Error: "
+    "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: "
   );
 }
 
