@@ -1,5 +1,5 @@
 #[test]
-fn single_file_mode_processes_given_data_file() {
+fn populate_file_processes_given_data_file() {
 
   let data_file_path = "tests/data/recipes/salads/shopska-salad.yml";
   let template_file_path = Option::Some("tests/data/recipes/template.html");
@@ -137,5 +137,3 @@ fn assert_populate_file_fails_with_error(
     error
   );
 }
-
-// TODO: test visitor error (aka var does not exist)

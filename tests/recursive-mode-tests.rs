@@ -2,7 +2,7 @@ use tempfile::TempDir;
 use std::fs;
 
 #[test]
-fn recursive_mode_processes_all_files_in_a_given_directory() {
+fn populate_all_files_processes_all_files_in_a_given_directory() {
 
   let src_dir_path = "tests/data/recipes";
 
@@ -111,8 +111,8 @@ fn recursive_mode_processes_all_files_in_a_given_directory() {
 }
 
 #[test]
-fn process_recursive_fails_if_src_dir_does_not_exist() {
-  assert_process_recursive_fails_with_error(
+fn populate_all_files_fails_if_src_dir_does_not_exist() {
+  assert_populate_all_files_fails_with_error(
     "tests/data/non-existing-dir",
     "tests/data",
     "Failed to load directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
@@ -120,8 +120,8 @@ fn process_recursive_fails_if_src_dir_does_not_exist() {
 }
 
 #[test]
-fn process_recursive_fails_if_src_dir_is_not_a_directory() {
-  assert_process_recursive_fails_with_error(
+fn populate_all_files_fails_if_src_dir_is_not_a_directory() {
+  assert_populate_all_files_fails_with_error(
     "tests/data/recipes/salads/shopska-salad.yml",
     "tests/data",
     "Failed to load directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
@@ -129,8 +129,8 @@ fn process_recursive_fails_if_src_dir_is_not_a_directory() {
 }
 
 #[test]
-fn process_recursive_fails_if_dst_dir_does_not_exist() {
-  assert_process_recursive_fails_with_error(
+fn populate_all_files_fails_if_dst_dir_does_not_exist() {
+  assert_populate_all_files_fails_with_error(
     "tests/data/recipes",
     "tests/data/non-existing-dir",
     "Failed to load directory. Dir: 'tests/data/non-existing-dir'. Error: 'Path does not exist.'."
@@ -138,8 +138,8 @@ fn process_recursive_fails_if_dst_dir_does_not_exist() {
 }
 
 #[test]
-fn process_recursive_fails_if_dst_dir_is_not_a_directory() {
-  assert_process_recursive_fails_with_error(
+fn populate_all_files_fails_if_dst_dir_is_not_a_directory() {
+  assert_populate_all_files_fails_with_error(
     "tests/data/recipes",
     "tests/data/recipes/salads/shopska-salad.yml",
     "Failed to load directory. Dir: 'tests/data/recipes/salads/shopska-salad.yml'. Error: 'Path is not a directory.'."
@@ -147,9 +147,9 @@ fn process_recursive_fails_if_dst_dir_is_not_a_directory() {
 }
 
 #[test]
-fn process_recursive_fails_if_data_file_does_not_have_template_path() {
+fn populate_all_files_fails_if_data_file_does_not_have_template_path() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-without-template/",
     temp_dir.path().to_str().unwrap(),
     "Failed to parse data file content. File: 'tests/data/invalid-files/data-without-template/invalid-data.yml'. Error: 'Path [template] is not defined in data file.'"
@@ -157,9 +157,9 @@ fn process_recursive_fails_if_data_file_does_not_have_template_path() {
 }
 
 #[test]
-fn process_recursive_fails_if_template_file_does_not_exist() {
+fn populate_all_files_fails_if_template_file_does_not_exist() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-with-non-existing-template/",
     temp_dir.path().to_str().unwrap(),
     "Failed to populate data file. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Failed to read template file content. File: 'tests/data/invalid-files/"
@@ -167,9 +167,9 @@ fn process_recursive_fails_if_template_file_does_not_exist() {
 }
 
 #[test]
-fn process_recursive_fails_if_data_file_is_not_a_valid_yaml() {
+fn populate_all_files_fails_if_data_file_is_not_a_valid_yaml() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-with-syntax-error/",
     temp_dir.path().to_str().unwrap(),
     "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: 'mapping values are not allowed in this context"
@@ -177,9 +177,9 @@ fn process_recursive_fails_if_data_file_is_not_a_valid_yaml() {
 }
 
 #[test]
-fn process_recursive_fails_if_template_file_has_lexical_error() {
+fn populate_all_files_fails_if_template_file_has_lexical_error() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-with-template-with-lexical-error/",
     temp_dir.path().to_str().unwrap(),
     "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/invalid-data.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/"
@@ -187,9 +187,9 @@ fn process_recursive_fails_if_template_file_has_lexical_error() {
 }
 
 #[test]
-fn process_recursive_fails_if_template_file_has_syntax_error() {
+fn populate_all_files_fails_if_template_file_has_syntax_error() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-with-template-with-syntax-error/",
     temp_dir.path().to_str().unwrap(),
     "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/"
@@ -197,22 +197,22 @@ fn process_recursive_fails_if_template_file_has_syntax_error() {
 }
 
 #[test]
-fn process_recursive_fails_if_data_file_is_missing_attribute_referenced_in_template() {
+fn populate_all_files_fails_if_data_file_is_missing_attribute_referenced_in_template() {
   let temp_dir = TempDir::new().unwrap();
-  assert_process_recursive_fails_with_error(
+  assert_populate_all_files_fails_with_error(
     "tests/data/invalid-files/data-with-missing-attribute/",
     temp_dir.path().to_str().unwrap(),
     "Failed to populate data file. File: 'tests/data/invalid-files/data-with-missing-attribute/invalid-data.yml'. Error: 'Path [name] is not defined in data file.'"
   );
 }
 
-fn assert_process_recursive_fails_with_error(
+fn assert_populate_all_files_fails_with_error(
   src_dir_path: &str,
   dst_dir_path: &str,
   expected_error_prefix: &str
 ) {
   let result = yasg::populate_all_files(src_dir_path, dst_dir_path);
-  assert!(result.is_err(), "Expected process_recursive to fail for src dir: '{}' and dst dir: '{}'.", src_dir_path, dst_dir_path);
+  assert!(result.is_err(), "Expected populate_all_files to fail for src dir: '{}' and dst dir: '{}'.", src_dir_path, dst_dir_path);
 
   let error = result.unwrap_err().to_string();
   assert!(
