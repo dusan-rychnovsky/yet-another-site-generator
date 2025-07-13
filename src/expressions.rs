@@ -21,8 +21,12 @@ impl<'a> Path<'a> {
     }
   }
 
-  pub fn from(segments: Vec<&'a str>) -> Self {
+  pub fn from_segments(segments: Vec<&'a str>) -> Self {
     Path { segments }
+  }
+
+  pub fn from_segment(segment: &'a str) -> Self {
+    Self::from_segments(vec![segment])
   }
 }
 
@@ -45,7 +49,7 @@ impl<'a> Expr<'a> {
   pub fn from(predicate: Predicate, segments: Vec<&'a str>) -> Self {
     Expr {
       predicate,
-      path: Path::from(segments)
+      path: Path::from_segments(segments)
     }
   }
 }

@@ -62,7 +62,7 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
     template_file_path.to_string()
   }
   else {
-    let template_file_path = data_set.get_str(&expressions::Path::from(vec!["template"]))
+    let template_file_path = data_set.get_str(&expressions::Path::from_segment("template"))
       .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
     let parent_path = Path::new(data_file_path).parent().unwrap();
     parent_path.join(template_file_path).to_string_lossy().to_string()

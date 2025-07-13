@@ -96,7 +96,7 @@ mod tests {
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
-        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Var(Path::from_segment("name"))),
         Box::new(Text("!")),
       ]),
     };
@@ -111,7 +111,7 @@ mod tests {
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
-        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Var(Path::from_segment("name"))),
         Box::new(Text("!")),
       ]),
     };
@@ -135,7 +135,7 @@ mod tests {
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Hello, ")),
-        Box::new(Var(Path::from(vec!["name"]))),
+        Box::new(Var(Path::from_segment("name"))),
         Box::new(Text("!")),
       ]),
     };
@@ -158,7 +158,7 @@ mod tests {
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("Section title: ")),
-        Box::new(Var(Path::from(vec!["section", "title"]))),
+        Box::new(Var(Path::from_segments(vec!["section", "title"]))),
         Box::new(Text(".")),
       ]),
     };
@@ -189,10 +189,10 @@ mod tests {
       root: Seq(vec![
         Box::new(ForEach(
           "link",
-          Path::from(vec!["section", "links"]),
+          Path::from_segments(vec!["section", "links"]),
           Box::new(Seq(vec![
             Box::new(Text("- link: ")),
-            Box::new(Var(Path::from(vec!["link", "href"]))),
+            Box::new(Var(Path::from_segments(vec!["link", "href"]))),
             Box::new(Text("\n")),
           ]))
         )),
@@ -222,7 +222,7 @@ mod tests {
         Expr::from(Exists, vec!["items", "amount"]),
         Box::new(Seq(vec![
           Box::new(Text("We have ")),
-          Box::new(Var(Path::from(vec!["items", "amount"]))),
+          Box::new(Var(Path::from_segments(vec!["items", "amount"]))),
           Box::new(Text(" items left."))
         ]))
       ),
@@ -248,7 +248,7 @@ mod tests {
         Expr::from(Exists, vec!["items", "amount"]),
         Box::new(Seq(vec![
           Box::new(Text("We have ")),
-          Box::new(Var(Path::from(vec!["items", "amount"]))),
+          Box::new(Var(Path::from_segments(vec!["items", "amount"]))),
           Box::new(Text(" items left."))
         ]))
       ),
@@ -283,10 +283,10 @@ mod tests {
           Box::new(Text("Subsections:\n")),
           Box::new(ForEach(
             "subsection",
-            Path::from(vec!["section", "subsections"]),
+            Path::from_segments(vec!["section", "subsections"]),
             Box::new(Seq(vec![
               Box::new(Text("- ")),
-              Box::new(Var(Path::from(vec!["subsection", "title"]))),
+              Box::new(Var(Path::from_segments(vec!["subsection", "title"]))),
               Box::new(Text("\n")),
             ]))
           )),
@@ -314,7 +314,7 @@ majitelem Dobré čajovny na Václavském náměstí v Praze.".to_string())),
     let tree = TemplateTree {
       root: Seq(vec![
         Box::new(Text("<p>")),
-        Box::new(Var(Path::from(vec!["text"]))),
+        Box::new(Var(Path::from_segment("text"))),
         Box::new(Text("</p>")),
       ]),
     };

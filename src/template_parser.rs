@@ -114,9 +114,9 @@ mod tests {
   fn parse_handles_text_with_variables() {
     let tokens = vec![
       TemplateToken::Text("Hello, "),
-      TemplateToken::Var(Path::from(vec!["name"])),
+      TemplateToken::Var(Path::from_segment("name")),
       TemplateToken::Text("! Welcome to "),
-      TemplateToken::Var(Path::from(vec!["place", "address"])),
+      TemplateToken::Var(Path::from_segments(vec!["place", "address"])),
       TemplateToken::Text(".")
     ];
     let result = parse(&tokens).unwrap();
@@ -125,9 +125,9 @@ mod tests {
       Seq(
         vec![
           Box::new(Text("Hello, ")),
-          Box::new(Var(Path::from(vec!["name"]))),
+          Box::new(Var(Path::from_segment("name"))),
           Box::new(Text("! Welcome to ")),
-          Box::new(Var(Path::from(vec!["place", "address"]))),
+          Box::new(Var(Path::from_segments(vec!["place", "address"]))),
           Box::new(Text("."))
         ]
       )
@@ -137,9 +137,9 @@ mod tests {
   #[test]
   fn parse_handles_foreach() {
     let tokens = vec![
-      TemplateToken::For("section", Path::from(vec!["sections"])),
+      TemplateToken::For("section", Path::from_segment("sections")),
       TemplateToken::Text("\n  Section. Title: "),
-      TemplateToken::Var(Path::from(vec!["section", "title"])),
+      TemplateToken::Var(Path::from_segments(vec!["section", "title"])),
       TemplateToken::Text("\n"),
       TemplateToken::EndFor("section")
     ];
@@ -153,7 +153,7 @@ mod tests {
             Path { segments: vec!["sections"] },
             Box::new(Seq(vec![
               Box::new(Text("\n  Section. Title: ")),
-              Box::new(Var(Path::from(vec!["section", "title"]))),
+              Box::new(Var(Path::from_segments(vec!["section", "title"]))),
               Box::new(Text("\n"))
             ]))
           ))
@@ -165,11 +165,11 @@ mod tests {
   #[test]
   fn parse_handles_nested_foreach() {
     let tokens = vec![
-      TemplateToken::For("section", Path::from(vec!["sections"])),
+      TemplateToken::For("section", Path::from_segment("sections")),
       TemplateToken::Text("\n  <ul>\n    "),
-      TemplateToken::For("link", Path::from(vec!["section", "links"])),
+      TemplateToken::For("link", Path::from_segments(vec!["section", "links"])),
       TemplateToken::Text("\n      <li>\n        Link: "),
-      TemplateToken::Var(Path::from(vec!["link", "href"])),
+      TemplateToken::Var(Path::from_segments(vec!["link", "href"])),
       TemplateToken::Text("\n      </li>\n    "),
       TemplateToken::EndFor("link"),
       TemplateToken::Text("\n  </ul>\n"),
@@ -187,10 +187,10 @@ mod tests {
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "link",
-                Path::from(vec!["section", "links"]),
+                Path::from_segments(vec!["section", "links"]),
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>\n        Link: ")),
-                  Box::new(Var(Path::from(vec!["link", "href"]))),
+                  Box::new(Var(Path::from_segments(vec!["link", "href"]))),
                   Box::new(Text("\n      </li>\n    "))
                 ]))
               )),
@@ -206,11 +206,11 @@ mod tests {
   fn parse_nested_foreach_with_incorrect_closing_order_fails() {
     assert_invalid_syntax(
       &vec![
-        TemplateToken::For("section", Path::from(vec!["sections"])),
+        TemplateToken::For("section", Path::from_segment("sections")),
         TemplateToken::Text("\n      <ul>\n        "),
-        TemplateToken::For("link", Path::from(vec!["section", "links"])),
+        TemplateToken::For("link", Path::from_segments(vec!["section", "links"])),
         TemplateToken::Text("\n          <li>\n            Link: "),
-        TemplateToken::Var(Path::from(vec!["link", "href"])),
+        TemplateToken::Var(Path::from_segments(vec!["link", "href"])),
         TemplateToken::Text("\n          </li>\n        "),
         TemplateToken::EndFor("section"),
         TemplateToken::Text("\n      </ul>\n    "),
@@ -256,9 +256,9 @@ mod tests {
     let tokens = vec![
       TemplateToken::If(Expr::from(Exists, vec!["section", "subsections"])),
       TemplateToken::Text("\n  <ul>\n    "),
-      TemplateToken::For("subsection", Path::from(vec!["section", "subsections"])),
+      TemplateToken::For("subsection", Path::from_segments(vec!["section", "subsections"])),
       TemplateToken::Text("\n      <li>Subsection: "),
-      TemplateToken::Var(Path::from(vec!["subsection", "title"])),
+      TemplateToken::Var(Path::from_segments(vec!["subsection", "title"])),
       TemplateToken::Text("</li>\n    "),
       TemplateToken::EndFor("subsection"),
       TemplateToken::Text("\n  </ul>\n"),
@@ -275,10 +275,10 @@ mod tests {
               Box::new(Text("\n  <ul>\n    ")),
               Box::new(ForEach(
                 "subsection",
-                Path::from(vec!["section", "subsections"]),
+                Path::from_segments(vec!["section", "subsections"]),
                 Box::new(Seq(vec![
                   Box::new(Text("\n      <li>Subsection: ")),
-                  Box::new(Var(Path::from(vec!["subsection", "title"]))),
+                  Box::new(Var(Path::from_segments(vec!["subsection", "title"]))),
                   Box::new(Text("</li>\n    "))
                 ]))
               )),
@@ -296,9 +296,9 @@ mod tests {
       &vec![
         TemplateToken::If(Expr::from(Exists, vec!["section", "subsections"])),
         TemplateToken::Text("\n  <ul>\n    "),
-        TemplateToken::For("subsection", Path::from(vec!["section", "subsections"])),
+        TemplateToken::For("subsection", Path::from_segments(vec!["section", "subsections"])),
         TemplateToken::Text("\n      <li>Subsection: "),
-        TemplateToken::Var(Path::from(vec!["subsection", "title"])),
+        TemplateToken::Var(Path::from_segments(vec!["subsection", "title"])),
         TemplateToken::Text("</li>\n    "),
         TemplateToken::EndIf, // This should be EndFor
         TemplateToken::Text("\n  </ul>\n"),

@@ -144,7 +144,7 @@ mod tests {
     let result = tokenize("[title]").unwrap();
     assert_eq!(
       vec![
-        Var(Path::from(vec!["title"]))
+        Var(Path::from_segment("title"))
       ],
       result
     );
@@ -155,7 +155,7 @@ mod tests {
     let result = tokenize("[section.title]").unwrap();
     assert_eq!(
       vec![
-        Var(Path::from(vec!["section", "title"]))
+        Var(Path::from_segments(vec!["section", "title"]))
       ],
       result
     );
@@ -173,7 +173,7 @@ mod tests {
     assert_eq!(
       vec![
         Text("Hello, "),
-        Var(Path::from(vec!["section", "title"])),
+        Var(Path::from_segments(vec!["section", "title"])),
         Text("!")
       ],
       result
@@ -190,7 +190,7 @@ mod tests {
       vec![
         For(
           "content",
-          Path::from(vec!["section", "content"])
+          Path::from_segments(vec!["section", "content"])
         ),
         Text("\n  Some text.\n"),
         EndFor("content")
