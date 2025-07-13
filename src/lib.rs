@@ -72,7 +72,8 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to read template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
   let template_tokens = template_tokenizer::tokenize(&template_file_content)
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
-  let template_tree = template_parser::parse(&template_tokens)?;
+  let template_tree = template_parser::parse(&template_tokens)
+    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
 
   let result = visitor::visit(&template_tree, &data_set)?;
   Ok(result)

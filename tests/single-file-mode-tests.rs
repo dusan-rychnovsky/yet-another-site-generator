@@ -95,11 +95,20 @@ fn populate_file_fails_if_template_file_does_not_exist() {
 }
 
 #[test]
-fn populate_file_fails_if_template_file_is_not_valid() {
+fn populate_file_fails_if_template_file_has_lexical_error() {
   assert_populate_file_fails_with_error(
     "tests/data/recipes/salads/shopska-salad.yml",
-    "tests/data/invalid-files/invalid-template.html",
-    "Failed to populate data file. File: 'tests/data/recipes/salads/shopska-salad.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/invalid-template.html'. Error: 'Missing closing bracket.'"
+    "tests/data/invalid-files/data-with-template-with-lexical-error/template-with-lexical-error.html",
+    "Failed to populate data file. File: 'tests/data/recipes/salads/shopska-salad.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/template-with-lexical-error.html'. Error: 'Missing closing bracket.'"
+  );
+}
+
+#[test]
+fn populate_file_fails_if_template_file_has_syntax_error() {
+  assert_populate_file_fails_with_error(
+    "tests/data/recipes/salads/shopska-salad.yml",
+    "tests/data/invalid-files/data-with-template-with-syntax-error/template-with-syntax-error.html",
+    "Failed to populate data file. File: 'tests/data/recipes/salads/shopska-salad.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/template-with-syntax-error.html'. Error: 'Unexpected token EndIf nested in Some(For(\"crumb\", Path { segments: [\"crumbs\"] })).'"
   );
 }
 
@@ -120,5 +129,4 @@ fn assert_populate_file_fails_with_error(
   );
 }
 
-// TODO: test template file parse error (aka missing closing bracket)
 // TODO: test visitor error (aka var does not exist)

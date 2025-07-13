@@ -177,7 +177,17 @@ fn process_recursive_fails_if_data_file_is_not_a_valid_yaml() {
 }
 
 #[test]
-fn process_recursive_fails_if_template_file_is_not_valid() {
+fn process_recursive_fails_if_template_file_has_lexical_error() {
+  let temp_dir = TempDir::new().unwrap();
+  assert_process_recursive_fails_with_error(
+    "tests/data/invalid-files/data-with-template-with-lexical-error/",
+    temp_dir.path().to_str().unwrap(),
+    "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/invalid-data.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/"
+  );
+}
+
+#[test]
+fn process_recursive_fails_if_template_file_has_syntax_error() {
   let temp_dir = TempDir::new().unwrap();
   assert_process_recursive_fails_with_error(
     "tests/data/invalid-files/data-with-template-with-syntax-error/",

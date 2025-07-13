@@ -1,1 +1,1 @@
-template: ../invalid-template.html
+template: ./template-with-syntax-error.html
