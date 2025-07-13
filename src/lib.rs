@@ -51,7 +51,6 @@ fn check_dir_exists(path: &str) -> Result<(), String> {
 }
 
 pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
-
   let data_content = fs::read_to_string(data_file_path)
     .map_err(|e| format!("Failed to read data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
   let data = data_file_parser::parse(&data_content)
@@ -75,6 +74,8 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
   let template_tree = template_parser::parse(&template_tokens)
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
 
-  let result = visitor::visit(&template_tree, &data_set)?;
+  let result = visitor::visit(&template_tree, &data_set)
+    .map_err(|e| format!("Failed to populate data file. File: '{}'. Error: '{}'.", data_file_path, e))?;
+
   Ok(result)
 }
