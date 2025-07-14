@@ -57,16 +57,7 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
     .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
   let data_set = DataSet::from(&data);
 
-  let template_file_path = if let Some(template_file_path) = template_file_path {
-    template_file_path.to_string()
-  }
-  else {
-    let template_file_path = data_set.get_str(&expressions::Path::from_segment("template"))
-      .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
-    let parent_path = Path::new(data_file_path).parent().unwrap();
-    parent_path.join(template_file_path).to_string_lossy().to_string()
-  };
-
+  let template_file_path = look_up_template_file_path(&data_set, data_file_path, template_file_path)?;
   let template_file_content = fs::read_to_string(&template_file_path)
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to read template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
   let template_tokens = template_tokenizer::tokenize(&template_file_content)
@@ -78,4 +69,17 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Error: '{}'.", data_file_path, e))?;
 
   Ok(result)
+}
+
+fn look_up_template_file_path(data_set: &DataSet, data_file_path: &str, template_file_path: Option<&str>) -> Result<String, String> {
+  let template_file_path = if let Some(template_file_path) = template_file_path {
+    template_file_path.to_string()
+  }
+  else {
+    let template_file_path = data_set.get_str(&expressions::Path::from_segment("template"))
+      .map_err(|e| format!("Failed to parse data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
+    let parent_path = Path::new(data_file_path).parent().unwrap();
+    parent_path.join(template_file_path).to_string_lossy().to_string()
+  };
+  Ok(template_file_path)
 }
