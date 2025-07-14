@@ -1,6 +1,7 @@
 use data_file_parser::DataSet;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 use walkdir::WalkDir;
 
 pub mod data_file_parser;
@@ -21,17 +22,8 @@ pub fn populate_all_files(src_dir_path: &str, dst_dir_path: &str) -> Result<(), 
     {
       let data_file_path = entry.path();
       let output = populate_file(data_file_path.to_str().unwrap(), None)?;
-
-      let relative_path = data_file_path.strip_prefix(src_dir_path)
-        .map_err(|e| format!("Failed to resolve data file relative path: {}", e))?;
-      let output_path = Path::new(dst_dir_path)
-        .join(relative_path)
-        .with_extension("html");
-
-      if let Some(parent) = output_path.parent() {
-        fs::create_dir_all(parent)?;
-      }
-
+      let (output_path, output_dir_path) = construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+      fs::create_dir_all(output_dir_path)?;
       fs::write(&output_path, output)?;
       println!("Generated: {:?}", output_path);
   }
@@ -48,6 +40,18 @@ fn check_dir_exists(path: &str) -> Result<(), String> {
     return Err(format!("Failed to load directory. Dir: '{}'. Error: 'Path is not a directory.'.", path.display()));
   }
   Ok(())
+}
+
+fn construct_output_path(data_file_path: &Path, src_dir_path: &str, dst_dir_path: &str) -> Result<(PathBuf, PathBuf), String> {
+  let relative_data_file_path = data_file_path.strip_prefix(src_dir_path)
+    .map_err(|e| format!("Failed to resolve relative data file path. Error: '{}'.", e))?;
+  let output_path = Path::new(dst_dir_path)
+    .join(relative_data_file_path)
+    .with_extension("html");
+  let output_dir_path = output_path.parent()
+    .ok_or_else(|| format!("Failed to resolve parent directory path. File path: '{}'.", output_path.display()))?
+    .to_path_buf();
+  Ok((output_path, output_dir_path))
 }
 
 pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
