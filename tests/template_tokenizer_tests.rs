@@ -1,62 +1,84 @@
-use yasg::template_tokenizer::{self, TemplateToken, TemplateToken::*};
+use yasg::template_tokenizer::{self, TemplateToken::*};
 use yasg::expressions::{Path, Expr, Predicate::*};
 use std::fs;
 
 #[test]
-fn tokenize_template_go_html() {
-    let content = fs::read_to_string("tests/data/go-template.html")
-      .unwrap_or_else(|e| panic!("Failed to read template file: {}", e));
+fn tokenize_template_example_html() {
 
-    let tokens = template_tokenizer::tokenize(&content);
-    assert!(tokens.is_ok(), "Expected to tokenize template file successfully. Error: {:?}", tokens.err());
-    let tokens = tokens.unwrap();
+  let content = fs::read_to_string("tests/data/example-template.html")
+    .unwrap_or_else(|e| panic!("Failed to read template file: {}", e));
+  let tokens = template_tokenizer::tokenize(&content)
+    .unwrap_or_else(|e| panic!("Failed to tokenize template file: {}", e));
 
-    assert_eq!(53, tokens.len());
+  assert_eq!(17, tokens.len());
 
-    assert_token_text(
-      &tokens[0],
-      "<!DOCTYPE html>\n<html lang=\"cs\">",
-      "<title>Mé oblíbené zdroje informací na téma: "
-    );
-    assert_eq!(Var(Path::from_segment("title")), tokens[1]);
-    assert_token_text(
-      &tokens[2],
-      "</title>\n  <link ",
-      "<ol class=\"breadcrumb mb-0\">\n        "
-    );
-    assert_eq!(For("crumb", Path::from_segment("crumbs")), tokens[3]);
-    assert_eq!(Text("\n          <li class=\"breadcrumb-item\"><a href=\""), tokens[4]);
-    assert_eq!(Var(Path::from_segments(vec!["crumb", "href"])), tokens[5]);
-    assert_eq!(Text("\">"), tokens[6]);
-    assert_eq!(Var(Path::from_segments(vec!["crumb", "text"])), tokens[7]);
-    assert_eq!(Text("</a></li>\n        "), tokens[8]);
-    assert_eq!(EndFor("crumb"), tokens[9]);
-    // ...
-    assert_eq!(If(Expr::from(Exists, vec!["section", "subsections"])), tokens[29]);
-    assert_eq!(Text("\n                  <ul>\n                    "), tokens[30]);
-    assert_eq!(For("subsection", Path::from_segments(vec!["section", "subsections"])), tokens[31]);
-    assert_eq!(Text("\n                      <li class=\"mb-1\">\n                        <em>"), tokens[32]);
-    assert_eq!(Var(Path::from_segments(vec!["subsection", "title"])), tokens[33]);
-    assert_eq!(Text("</em> - "), tokens[34]);
-    assert_eq!(Var(Path::from_segments(vec!["subsection", "content"])), tokens[35]);
-    assert_eq!(Text("\n                      </li>\n                    "), tokens[36]);
-    assert_eq!(EndFor("subsection"), tokens[37]);
-    assert_eq!(Text("\n                  </ul>\n                "), tokens[38]);
-    assert_eq!(EndIf, tokens[39]);
-    // ...
-    assert_token_text(
-      &tokens[52],
-      "\n      </div>\n    </div>",
-      "</body>\n</html>\n"
-    );
-}
+  assert_eq!(
+    Text("\
+<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <title>"),
+    tokens[0]
+  );
 
-fn assert_token_text(token: &TemplateToken, expected_start: &str, expected_end: &str) {
-  match token {
-    Text(s) => {
-      assert!(s.starts_with(expected_start), "unexpected text: '{}'", s);
-      assert!(s.ends_with(expected_end), "unexpected text: '{}'", s);
-    }
-    other => panic!("unexpected token: {:?}", other),
-  }
+  assert_eq!(Var(Path::from_segment("title")), tokens[1]);
+
+  assert_eq!(
+    Text("\
+</title>
+  </head>
+  <body>
+    <h1>"),
+    tokens[2]
+  );
+
+  assert_eq!(Var(Path::from_segment("title")), tokens[3]);
+
+  assert_eq!(
+    Text("\
+</h1>
+    <p>This is a testing page.</p>
+    "),
+    tokens[4]
+  );
+
+  assert_eq!(If(Expr::from(Exists, vec!["backpack", "items"])), tokens[5]);
+
+  assert_eq!(
+    Text("
+      <h2>Items in Backpack:</h2>
+      <ul>
+        "),
+    tokens[6]
+  );
+
+  assert_eq!(For("item", Path::from_segments(vec!["backpack", "items"])), tokens[7]);
+
+  assert_eq!(
+    Text("
+          <li>"),
+    tokens[8]
+  );
+
+  assert_eq!(Var(Path::from_segments(vec!["item", "name"])), tokens[9]);
+  assert_eq!(Text(" - weight: "), tokens[10]);
+  assert_eq!(Var(Path::from_segments(vec!["item", "weight"])), tokens[11]);
+  assert_eq!(Text("</li>\n        "), tokens[12]);
+  assert_eq!(EndFor("item"), tokens[13]);
+
+  assert_eq!(
+    Text("
+      </ul>
+    "),
+    tokens[14]);
+
+  assert_eq!(EndIf, tokens[15]);
+
+  assert_eq!(
+    Text("
+  </body>
+</html>
+"),
+    tokens[16]
+  );
 }
