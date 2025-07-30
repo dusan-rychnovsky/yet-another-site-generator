@@ -18,7 +18,7 @@ pub fn populate_all_files(src_dir_path: &str, dst_dir_path: &str) -> Result<(), 
     .into_iter()
     .filter_map(|e| e.ok())
     .filter(|e| e.file_type().is_file())
-    .filter(|e| e.path().extension().map_or(false, |ext| ext == "yml"))
+    .filter(|e| e.path().extension().is_some_and(|ext| ext == "yml"))
     {
       let data_file_path = entry.path();
       let output = populate_file(data_file_path.to_str().unwrap(), None)?;
