@@ -43,18 +43,16 @@ impl<'a> Config<'a> {
         })
       }
     }
+    else if args.len() != 3 {
+      Err("Single-file mode requires two parameters.")
+    }
     else {
-      if args.len() != 3 {
-        Err("Single-file mode requires two parameters.")
-      }
-      else {
-        Ok(Config {
-          mode: Mode::SingleFile {
-            data_file_path: &args[1],
-            template_file_path: &args[2],
-          },
-        })
-      }
+      Ok(Config {
+        mode: Mode::SingleFile {
+          data_file_path: &args[1],
+          template_file_path: &args[2],
+        },
+      })
     }
   }
 }
