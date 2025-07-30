@@ -48,13 +48,10 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
         pos = new_start_pos;
       }
       TemplateToken::EndFor(var) => {
-        match context {
-          Some(TemplateToken::For(ctx_var, _)) => {
-            if ctx_var == var {
-              break;
-            }
-          },
-          _ => ()
+        if let Some(TemplateToken::For(ctx_var, _)) = context {
+          if ctx_var == var {
+            break;
+          }
         }
         return Err(format!("Unexpected token EndFor(\"{}\") nested in {:?}.", var, context));
       },
@@ -67,13 +64,11 @@ fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Opti
         pos = new_start_pos;
       }
       TemplateToken::EndIf => {
-        match context {
-          Some(TemplateToken::If(_)) => {
-            break;
-          },
-          _ => {
-            return Err(format!("Unexpected token EndIf nested in {:?}.", context));
-          }
+        if let Some(TemplateToken::If(_)) = context {
+          break;
+        }
+        else {
+          return Err(format!("Unexpected token EndIf nested in {:?}.", context));
         }
       }
     }
