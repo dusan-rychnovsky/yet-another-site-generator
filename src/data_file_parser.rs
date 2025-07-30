@@ -78,8 +78,8 @@ impl<'a> DataSet<'a> {
       }
     }
     else {
-      path.segments.iter().fold(Some(&self.root), |acc, segment| {
-        acc.and_then(|v| v.get(segment))
+      path.segments.iter().try_fold(self.root, |acc, segment| {
+        acc.get(segment)
       })
     }
   }
