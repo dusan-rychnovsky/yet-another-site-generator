@@ -18,7 +18,7 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
     },
     Var(path) => {
       let val = data.get_str(path)?;
-      let val = replace_asterix(&val)?;
+      let val = replace_asterix(val)?;
       Ok(val)
     },
     Text(text) => {
