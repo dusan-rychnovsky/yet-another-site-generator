@@ -17,7 +17,7 @@ impl<'a> DataSet<'a> {
   }
 
   pub fn get_str(&self, path: &Path) -> Result<&str, String> {
-    let value = Self::locate(&self, path);
+    let value = Self::locate(self, path);
     match value {
       Some(value) => {
         match value.as_str() {
@@ -58,7 +58,7 @@ impl<'a> DataSet<'a> {
   }
 
   pub fn exists(&self, path: &Path) -> bool {
-    Self::locate(&self, path).is_some()
+    Self::locate(self, path).is_some()
   }
 
   fn locate(&self, path: &Path) -> Option<&'a serde_yaml::Value> {
