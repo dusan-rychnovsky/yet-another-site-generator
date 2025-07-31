@@ -15,6 +15,8 @@ pub enum Mode<'a> {
   },
 }
 
+/// Generates a usage message that describes how to use the command line interface,
+/// which should be printed to the console.
 pub fn print_usage(args: &[String]) -> String {
   format!("\
 Usage: {} <data-file> <template-file>
@@ -25,6 +27,10 @@ Usage: {} <data-file> <template-file>
 }
 
 impl<'a> Config<'a> {
+
+  /// Parses command line arguments and returns a Config instance, or an error
+  /// if the arguments are invalid, such as if the mode is not recognized
+  /// or if not enough arguments are provided.
   pub fn parse(args: &'a [String]) -> Result<Self, &'static str> {
     if args.len() < 2 {
       return Err("Not enough arguments provided.");

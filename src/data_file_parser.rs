@@ -1,21 +1,32 @@
 use crate::expressions::Path;
 use serde_yaml;
 
+/// Represents a dataset parsed from a yaml file.
 #[derive(Debug)]
 pub struct DataSet<'a> {
+  /// Context is used to offset paths in the represented yaml tree, in cases when
+  /// the dataset is referenced in the context of a variable in the template,
+  /// such as within foreach loops. Otherwise, it is an empty string.
   pub context: &'a str,
+  /// Root node of the yaml tree.
   pub root: &'a serde_yaml::Value
 }
 
+/// Parses the given yaml content to a tree.
 pub fn parse(input :&str) -> Result<serde_yaml::Value, serde_yaml::Error> {
   serde_yaml::from_str(input)
 }
 
 impl<'a> DataSet<'a> {
+
+  /// Creates a new DataSet with empty context.
   pub fn from(root: &'a serde_yaml::Value) -> Self {
     DataSet { context: "", root }
   }
 
+  /// Gets a string value from the represented yaml tree at the given path.
+  /// Returns an error if the path is not defined in the tree
+  /// or if it does not reference a string.
   pub fn get_str(&self, path: &Path) -> Result<&str, String> {
     let value = Self::locate(self, path);
     match value {
@@ -33,6 +44,12 @@ impl<'a> DataSet<'a> {
     }
   }
 
+  /// Lists all child datasets which are located at the given path in the represented yaml tree.
+  /// Returns an error if the path is not defined in the tree
+  /// or if it does not reference a sequence.
+  ///
+  /// # Arguments
+  /// * `context` - context of the child datasets.
   pub fn list(&self, context: &'a str, path: &Path) -> Result<Vec<DataSet<'a>>, String> {
     let value = self.locate(path);
     match value {
@@ -57,11 +74,14 @@ impl<'a> DataSet<'a> {
     }
   }
 
+  /// Checks if a node exists in the represented yaml tree at the given path.
   pub fn exists(&self, path: &Path) -> bool {
     Self::locate(self, path).is_some()
   }
 
+  /// Locates a node in the represented yaml tree by the given path.
   fn locate(&self, path: &Path) -> Option<&'a serde_yaml::Value> {
+    // offset path by dataset context, if exists
     if !self.context.is_empty() {
       if !path.segments.is_empty() && self.context == path.segments[0] {
         let new_dataset = DataSet {
