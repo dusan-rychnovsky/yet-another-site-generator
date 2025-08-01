@@ -5,7 +5,7 @@ use serde_yaml;
 #[derive(Debug)]
 pub struct DataSet<'a> {
   /// Context is used to offset paths in the represented yaml tree, in cases when
-  /// the dataset is referenced in the context of a variable in the template,
+  /// the [`DataSet`] is referenced in the context of a variable in the template,
   /// such as within foreach loops. Otherwise, it is an empty string.
   pub context: &'a str,
   /// Root node of the yaml tree.
@@ -19,7 +19,7 @@ pub fn parse(input :&str) -> Result<serde_yaml::Value, serde_yaml::Error> {
 
 impl<'a> DataSet<'a> {
 
-  /// Creates a new DataSet with empty context.
+  /// Creates a new [`DataSet`] with empty [`DataSet::context`].
   pub fn from(root: &'a serde_yaml::Value) -> Self {
     DataSet { context: "", root }
   }
@@ -44,7 +44,7 @@ impl<'a> DataSet<'a> {
     }
   }
 
-  /// Lists all child datasets which are located at the given path in the represented yaml tree.
+  /// Lists all child [`DataSet`]s which are located at the given path in the represented yaml tree.
   /// Returns an error if the path is not defined in the tree
   /// or if it does not reference a sequence.
   ///

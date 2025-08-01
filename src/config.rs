@@ -28,7 +28,7 @@ Usage: {} <data-file> <template-file>
 
 impl<'a> Config<'a> {
 
-  /// Parses command line arguments and returns a Config instance, or an error
+  /// Parses command line arguments and returns a [`Config`] instance, or an error
   /// if the arguments are invalid, such as if the mode is not recognized
   /// or if not enough arguments are provided.
   pub fn parse(args: &'a [String]) -> Result<Self, &'static str> {
