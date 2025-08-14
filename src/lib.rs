@@ -10,6 +10,9 @@ pub mod template_parser;
 pub mod expressions;
 pub mod visitor;
 
+/// Looks up all data files in the given source directory. For each data file, loads the linked template file
+/// and populates it. The populated files are saved in the given destination directory, mirroring the data file
+/// paths.
 pub fn populate_all_files(src_dir_path: &str, dst_dir_path: &str) -> Result<(), Box<dyn std::error::Error>> {
   check_dir_exists(src_dir_path)?;
   check_dir_exists(dst_dir_path)?;
@@ -31,6 +34,7 @@ pub fn populate_all_files(src_dir_path: &str, dst_dir_path: &str) -> Result<(), 
   Ok(())
 }
 
+/// Checks that the given path exists and represents a directory.
 fn check_dir_exists(path: &str) -> Result<(), String> {
   let path = Path::new(path);
   if !path.exists() {
@@ -42,6 +46,9 @@ fn check_dir_exists(path: &str) -> Result<(), String> {
   Ok(())
 }
 
+/// Returns file path in the given destination directory, which should contain the output of processing the given data file.
+/// The data file is expected to be located in the given source directory.
+/// Note that populated files are placed in the same relative locations as source data files.
 fn construct_output_path(data_file_path: &Path, src_dir_path: &str, dst_dir_path: &str) -> Result<(PathBuf, PathBuf), String> {
   let relative_data_file_path = data_file_path.strip_prefix(src_dir_path)
     .map_err(|e| format!("Failed to resolve relative data file path. Error: '{}'.", e))?;
@@ -54,6 +61,7 @@ fn construct_output_path(data_file_path: &Path, src_dir_path: &str, dst_dir_path
   Ok((output_path, output_dir_path))
 }
 
+/// Populates the given template file using the given data file and returns the populated file content.
 pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> Result<String, Box<dyn std::error::Error>> {
   let data_content = fs::read_to_string(data_file_path)
     .map_err(|e| format!("Failed to read data file content. File: '{}'. Error: '{}'.", data_file_path, e))?;
@@ -75,6 +83,9 @@ pub fn populate_file(data_file_path: &str, template_file_path: Option<&str>) -> 
   Ok(result)
 }
 
+/// Resolves the template file to be used with the given data file.
+/// If a template file path is explicitly provided, it will be used. Otherwise,
+/// the path is looked up from the `template` field in the given data set.
 fn look_up_template_file_path(data_set: &DataSet, data_file_path: &str, template_file_path: Option<&str>) -> Result<String, String> {
   let template_file_path = if let Some(template_file_path) = template_file_path {
     template_file_path.to_string()
