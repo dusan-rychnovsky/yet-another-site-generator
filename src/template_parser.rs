@@ -2,11 +2,13 @@ use crate::template_tokenizer::{TemplateToken};
 use crate::expressions::{Path, Expr};
 use std::option::Option::{self, Some, None};
 
+/// Represents a parse tree of a template file.
 #[derive(Debug, PartialEq)]
 pub struct TemplateTree<'a> {
   pub root: TemplateNode<'a>
 }
 
+/// Represents a node in a [`TemplateTree`].
 #[derive(Debug, PartialEq)]
 pub enum TemplateNode<'a> {
   Seq(Vec<Box<TemplateNode<'a>>>),
@@ -16,6 +18,7 @@ pub enum TemplateNode<'a> {
   If (Expr<'a>, Box<TemplateNode<'a>>)
 }
 
+/// Parses the given sequence of tokens into a parse tree.
 pub fn parse<'a>(tokens: &[TemplateToken<'a>]) -> Result<TemplateTree<'a>, String> {
   let (nodes, _) = parse_nodes(tokens, 0, None)?;
   Ok(TemplateTree {
@@ -23,6 +26,8 @@ pub fn parse<'a>(tokens: &[TemplateToken<'a>]) -> Result<TemplateTree<'a>, Strin
   })
 }
 
+/// Parses the given sequence of tokens into a parse tree, starting from the given position.
+/// This is a helper function for handling recursion.
 fn parse_nodes<'a>(tokens: &[TemplateToken<'a>], start_pos: usize, context: Option<&TemplateToken<'a>>)
   -> Result<(Vec<Box<TemplateNode<'a>>>, usize), String> {
 

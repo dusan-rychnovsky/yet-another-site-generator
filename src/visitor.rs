@@ -2,10 +2,12 @@ use crate::template_parser::{TemplateTree, TemplateNode, TemplateNode::*};
 use crate::data_file_parser::DataSet;
 use crate::expressions::Predicate::Exists;
 
+/// Populates the given [`TemplateTree`] with values from the given [`DataSet`].
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
   visit_node(&tree.root, data)
 }
 
+/// Populates the subtree rooted at the given [`TemplateNode`] with values from the given [`DataSet`].
 fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
   match node {
     Seq(nodes) => {
@@ -47,6 +49,7 @@ fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
   }
 }
 
+/// Replaces asterisks in the given text with HTML <em></em> tags.
 fn replace_asterix(text: &str) -> Result<String, &str> {
   let mut result = String::new();
   let mut in_asterix = false;

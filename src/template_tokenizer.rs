@@ -1,5 +1,6 @@
 use crate::expressions::{Expr, Path};
 
+/// Represents a lexical token of a template file.
 #[derive(Debug, PartialEq)]
 pub enum TemplateToken<'a> {
   Text(&'a str),
@@ -10,6 +11,7 @@ pub enum TemplateToken<'a> {
   EndIf,
 }
 
+/// Tokenizes the given template file into a sequence of [`TemplateToken`].
 pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
   let mut tokens = Vec::new();
   let mut rest = input;
@@ -18,14 +20,11 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
       if from > 0 {
         let text = &rest[..from];
         let text = TemplateToken::Text(text);
-        // println!("text: {:?}", text);
         tokens.push(text);
       }
       if let Some(to) = rest.find(']') {
         let tag_input = &rest[from+1..to];
-        // println!("tag input: '{}'", tag_input);
         let tag = TemplateToken::parse_tag(tag_input)?;
-        // println!("tag: {:?}", tag);
         tokens.push(tag);
         rest = &rest[to+1..];
       }
@@ -36,7 +35,6 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
     else {
       let text = rest;
       let text = TemplateToken::Text(text);
-      // println!("text: {:?}", text);
       tokens.push(text);
       break;
     }
@@ -45,6 +43,7 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
 }
 
 impl<'a> TemplateToken<'a> {
+  /// Parses the given string into a [`TemplateToken`].
   fn parse_tag(input: &'a str) -> Result<Self, String> {
     let parts: Vec<&str> = input.split_whitespace().collect();
     if parts.is_empty() {
@@ -60,6 +59,7 @@ impl<'a> TemplateToken<'a> {
     Ok(tag)
   }
 
+  /// Parses the given sequence of strings into a [`TemplateToken::Var`].
   fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
     if parts.len() == 1 {
       Ok(TemplateToken::Var(
@@ -71,6 +71,7 @@ impl<'a> TemplateToken<'a> {
     }
   }
 
+  /// Parses the given sequence of strings into a [`TemplateToken::EndIf`].
   fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
     assert!(parts[0] == "endif", "Expected 'endif' tag, got: {}", parts[0]);
     if parts.len() == 1 {
@@ -81,6 +82,7 @@ impl<'a> TemplateToken<'a> {
     }
   }
 
+  /// Parses the given sequence of strings into a [`TemplateToken::If`].
   fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
     assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
     let expr = Expr::parse(parts[1..].to_vec())
@@ -88,6 +90,7 @@ impl<'a> TemplateToken<'a> {
     Ok(TemplateToken::If(expr))
   }
 
+  /// Parses the given sequence of strings into a [`TemplateToken::For`].
   fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
     assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
     if parts.len() == 4 {
@@ -108,6 +111,7 @@ impl<'a> TemplateToken<'a> {
     }
   }
 
+  /// Parses the given sequence of strings into a [`TemplateToken::EndFor`].
   fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
     assert!(parts[0] == "endfor", "Expected 'endfor' tag, got: {}", parts[0]);
     if parts.len() == 2 {
