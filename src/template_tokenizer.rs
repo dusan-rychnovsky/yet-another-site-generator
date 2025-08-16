@@ -58,7 +58,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::Var`].
-    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
+    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, &str> {
         if parts.len() == 1 {
             Ok(TemplateToken::Var(Path::parse(parts[0])))
         } else {
@@ -67,7 +67,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::EndIf`].
-    fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
         assert!(
             parts[0] == "endif",
             "Expected 'endif' tag, got: {}",
@@ -81,7 +81,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::If`].
-    fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
         assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
         let expr = Expr::parse(parts[1..].to_vec())
             .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
@@ -89,7 +89,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::For`].
-    fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
         assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
         if parts.len() == 4 {
             if parts[2] == "in" {
@@ -106,7 +106,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::EndFor`].
-    fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
+    fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
         assert!(
             parts[0] == "endfor",
             "Expected 'endfor' tag, got: {}",
