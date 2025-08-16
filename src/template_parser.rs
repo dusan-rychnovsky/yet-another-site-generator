@@ -54,17 +54,15 @@ fn parse_nodes<'a>(
                 )));
                 pos = new_start_pos;
             }
-            TemplateToken::EndFor(var) => {
-                if let Some(TemplateToken::For(ctx_var, _)) = context {
-                    if ctx_var == var {
-                        break;
-                    }
+            TemplateToken::EndFor(var) => match context {
+                Some(TemplateToken::For(ctx_var, _)) if ctx_var == var => break,
+                _ => {
+                    return Err(format!(
+                        "Unexpected token EndFor(\"{}\") nested in {:?}.",
+                        var, context
+                    ));
                 }
-                return Err(format!(
-                    "Unexpected token EndFor(\"{}\") nested in {:?}.",
-                    var, context
-                ));
-            }
+            },
             TemplateToken::If(cond) => {
                 let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
                 nodes.push(Box::new(TemplateNode::If(
