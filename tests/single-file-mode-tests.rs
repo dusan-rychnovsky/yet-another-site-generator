@@ -116,7 +116,7 @@ fn populate_file_fails_if_template_file_has_syntax_error() {
 fn populate_file_fails_if_data_file_is_missing_attribute_referenced_in_template() {
   assert_populate_file_fails_with_error(
     "tests/data/invalid-files/data-with-missing-attribute/invalid-data.yml",
-    "tests/data/invalid-files/data-with-missing-attribute/invalid-template.yml",
+    "tests/data/invalid-files/data-with-missing-attribute/invalid-template.html",
     "Failed to populate data file. File: 'tests/data/invalid-files/data-with-missing-attribute/invalid-data.yml'. Error: 'Path [name] is not defined in data file.'"
   );
 }
