@@ -22,6 +22,8 @@ See examples below.
 
 ## High-level Architecture
 
+The following diagram shows how a `Data File` and `Template File` are loaded and parsed, and then combined into a `Populated File`:
+
 ```mermaid
 flowchart LR
   DataFile["Data File
