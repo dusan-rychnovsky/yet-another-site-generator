@@ -20,6 +20,35 @@ Runs in two modes:
 
 See examples below.
 
+## High-level Architecture
+
+```mermaid
+flowchart LR
+  DataFile["Data File
+  *YAML*"]
+  DataFileParser>"data_file_parser::parse"]
+  TemplateFile["Template File
+  *HTML + custom tags*"]
+  TemplateTokenizer>"template_tokenizer::tokenize"]
+  TemplateTokens["TemplateToken[]
+  *-- lexical tokens*"]
+  TemplateParser>"template_parser::parse"]
+  TemplateTree["TemplateTree
+  *-- syntax tree*"]
+  DataSet
+  Visitor>"visitor::visit"]
+  PopulatedFile["Populated File
+  *HTML*"]
+
+  DataFile --> DataFileParser --> DataSet
+  TemplateFile --> TemplateTokenizer --> TemplateTokens --> TemplateParser --> TemplateTree
+  DataSet --> Visitor --> PopulatedFile
+  TemplateTree --> Visitor
+
+  classDef border-dashed stroke-dasharray: 5 5
+  class DataFileParser,TemplateTokenizer,TemplateParser,Visitor border-dashed
+```
+
 ## How To
 
 ### Build
@@ -284,3 +313,4 @@ The generated files should have following contents:
   </body>
 </html>
 ```
+
