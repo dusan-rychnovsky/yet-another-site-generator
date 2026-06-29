@@ -38,6 +38,14 @@ pub fn populate_all_files(
     Ok(())
 }
 
+/// TODO
+pub fn populate_blog(
+    src_dir_path: &str,
+    dst_dir_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    populate_all_files(src_dir_path, dst_dir_path)
+}
+
 /// Checks that the given path exists and represents a directory.
 fn check_dir_exists(path: &str) -> Result<(), String> {
     let path = Path::new(path);

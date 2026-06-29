@@ -31,6 +31,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }) => {
             yasg::populate_all_files(src_dir_path, dst_dir_path)?;
         }
+        Ok(Config {
+            mode:
+                Mode::Blog {
+                    src_dir_path,
+                    dst_dir_path,
+                },
+        }) => {
+            yasg::populate_blog(src_dir_path, dst_dir_path)?;
+        }
         Err(err) => {
             eprintln!("Error: {}", err);
             eprintln!("{}", config::print_usage(&args));

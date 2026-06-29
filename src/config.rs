@@ -13,6 +13,10 @@ pub enum Mode<'a> {
         src_dir_path: &'a str,
         dst_dir_path: &'a str,
     },
+    Blog {
+        src_dir_path: &'a str,
+        dst_dir_path: &'a str,
+    },
 }
 
 /// Generates a usage message that describes how to use the command line interface,
@@ -21,8 +25,9 @@ pub fn print_usage(args: &[String]) -> String {
     format!(
         "\
 Usage: {} <data-file> <template-file>
-   or: {} -r <source-dir> <dest-dir>",
-        args[0], args[0]
+   or: {} -r <source-dir> <dest-dir>
+   or: {} -b <source-dir> <dest-dir>",
+        args[0], args[0], args[0]
     )
 }
 
@@ -41,6 +46,17 @@ impl<'a> Config<'a> {
             } else {
                 Ok(Config {
                     mode: Mode::Recursive {
+                        src_dir_path: &args[2],
+                        dst_dir_path: &args[3],
+                    },
+                })
+            }
+        } else if args[1] == "-b" {
+            if args.len() != 4 {
+                Err("Blog mode requires two parameters.")
+            } else {
+                Ok(Config {
+                    mode: Mode::Blog {
                         src_dir_path: &args[2],
                         dst_dir_path: &args[3],
                     },
@@ -147,5 +163,49 @@ mod tests {
         let config = Config::parse(&args);
         let err = config.unwrap_err();
         assert_eq!(err, "Recursive mode requires two parameters.");
+    }
+
+    #[test]
+    fn parse_supports_blog_mode() {
+        let args = vec![
+            "yasg".to_string(),
+            "-b".to_string(),
+            "src".to_string(),
+            "dst".to_string(),
+        ];
+        let config =
+            Config::parse(&args).unwrap_or_else(|e| panic!("Failed to parse config: {}", e));
+        match config.mode {
+            Mode::Blog {
+                src_dir_path,
+                dst_dir_path,
+            } => {
+                assert_eq!(src_dir_path, "src");
+                assert_eq!(dst_dir_path, "dst");
+            }
+            _ => panic!("Expected Blog mode, got {:#?}", config),
+        }
+    }
+
+    #[test]
+    fn parse_blog_mode_fails_if_not_enough_args() {
+        let args = vec!["yasg".to_string(), "-b".to_string(), "src".to_string()];
+        let config = Config::parse(&args);
+        let err = config.unwrap_err();
+        assert_eq!(err, "Blog mode requires two parameters.");
+    }
+
+    #[test]
+    fn parse_blog_mode_fails_if_too_many_args() {
+        let args = vec![
+            "yasg".to_string(),
+            "-b".to_string(),
+            "src".to_string(),
+            "dst".to_string(),
+            "extra".to_string(),
+        ];
+        let config = Config::parse(&args);
+        let err = config.unwrap_err();
+        assert_eq!(err, "Blog mode requires two parameters.");
     }
 }
