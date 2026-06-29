@@ -44,10 +44,7 @@ pub fn populate_all_files(
 /// data file is populated and saved in the destination directory mirroring its source path.
 /// Additionally, the following virtual placeholders are made available for every page:
 /// - PAGES - a sequence of datasources of all pages of the blog.
-/// - CATEGORIES - a tree of categories grouping all pages by the `categories` chain declared in
-///   their data files. It is a sequence of category nodes, where each category node exposes its
-///   `name`, its `pages` (a sequence of page datasources directly assigned to it) and its
-///   `subcategories` (a sequence of nested category nodes).
+/// - CATEGORIES - a tree of datasources of all pages groupped by categories chains.
 pub fn populate_blog(
     src_dir_path: &str,
     dst_dir_path: &str,
@@ -60,13 +57,7 @@ pub fn populate_blog(
     let categories = build_categories(&page_nodes);
 
     for (data_file_path, value) in &pages {
-        let mut root_map = match Node::from_yaml(value) {
-            Node::Map(map) => map,
-            _ => HashMap::new(),
-        };
-        root_map.insert("PAGES", Node::Seq(page_nodes.clone()));
-        root_map.insert("CATEGORIES", categories.clone());
-        let root = Node::Map(root_map);
+        let root = insert_virtual_placeholders(value, &page_nodes, &categories);
         let data_set = DataSet::from(&root);
         
         let populated_content = populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
@@ -80,6 +71,21 @@ pub fn populate_blog(
     }
 
     Ok(())
+}
+
+/// Converts the given yaml into a [`Node`] while also embedding virtual placeholders.
+fn insert_virtual_placeholders<'a>(
+    value: &'a serde_yaml::Value,
+    page_nodes: &[Node<'a>],
+    categories: &Node<'a>,
+) -> Node<'a> {
+    let mut root_map = match Node::from_yaml(value) {
+        Node::Map(map) => map,
+        _ => HashMap::new(),
+    };
+    root_map.insert("PAGES", Node::Seq(page_nodes.to_vec()));
+    root_map.insert("CATEGORIES", categories.clone());
+    Node::Map(root_map)
 }
 
 /// Intermediate node used to incrementally build the CATEGORIES tree before converting it into a
