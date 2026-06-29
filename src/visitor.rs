@@ -71,12 +71,14 @@ fn replace_asterix(text: &str) -> Result<String, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::data_file_parser::Node;
     use crate::expressions::{Expr, Path};
     use serde_yaml::{Mapping, Value};
 
     #[test]
     fn visit_simple_text() {
-        let data = DataSet::from(&Value::Null);
+        let root = Node::Other;
+        let data = DataSet::from(&root);
         let tree = TemplateTree {
             root: Text("Hello, world!"),
         };
@@ -90,7 +92,8 @@ mod tests {
             Value::String("name".to_string()),
             Value::String("Julia".to_string()),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Box::new(Text("Hello, ")),
@@ -105,7 +108,8 @@ mod tests {
     #[test]
     fn visit_var_fails_if_data_entry_doesnt_exist() {
         let data = Value::Mapping(Mapping::new());
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Box::new(Text("Hello, ")),
@@ -136,7 +140,8 @@ mod tests {
                 ),
             ])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Box::new(Text("Hello, ")),
@@ -161,7 +166,8 @@ mod tests {
                 Value::String("Go Basics".to_string()),
             )])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Box::new(Text("Section title: ")),
@@ -191,7 +197,8 @@ mod tests {
                 ]),
             )])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![Box::new(ForEach(
                 "link",
@@ -222,7 +229,8 @@ mod tests {
                 Value::String("2".to_string()),
             )])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
@@ -246,7 +254,8 @@ mod tests {
                 Value::String("2".to_string()),
             )])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
@@ -279,7 +288,8 @@ mod tests {
                 ]),
             )])),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["section", "subsections"]),
@@ -319,7 +329,8 @@ majitelem Dobré čajovny na Václavském náměstí v Praze."
                     .to_string(),
             ),
         )]));
-        let data_set = DataSet::from(&data);
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Box::new(Text("<p>")),

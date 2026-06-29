@@ -1,4 +1,5 @@
 use data_file_parser::DataSet;
+use data_file_parser::Node;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -107,7 +108,8 @@ pub fn populate_file(
             data_file_path, e
         )
     })?;
-    let data_set = DataSet::from(&data);
+    let root = Node::from_yaml(&data);
+    let data_set = DataSet::from(&root);
 
     let template_file_path =
         look_up_template_file_path(&data_set, data_file_path, template_file_path)?;
