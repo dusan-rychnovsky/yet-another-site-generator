@@ -2,7 +2,7 @@ use std::fs;
 use tempfile::TempDir;
 
 #[test]
-fn populate_blog_exposes_pages_placeholder_and_generates_pages() {
+fn populate_blog_exposes_pages_and_categories_placeholders_and_generates_pages() {
     let src_dir_path = "tests/data/blog";
 
     let temp_dir = TempDir::new().unwrap();
@@ -22,9 +22,43 @@ fn populate_blog_exposes_pages_placeholder_and_generates_pages() {
     <title>Welcome to my blog!</title>
   </head>
   <body>
+    
+      
+      
+        <h2>cooking</h2>
+        <ul>
+          
+        </ul>
+        
+          <h3>recipes</h3>
+          <ul>
+            
+              <li>Overnight Oats</li>
+            
+          </ul>
+        
+      
+        <h2>finance</h2>
+        <ul>
+          
+            <li>Finance Related</li>
+          
+        </ul>
+        
+          <h3>mmm</h3>
+          <ul>
+            
+              <li>Car Clowns</li>
+            
+          </ul>
+        
+      
+    
     <h1>Welcome to my blog!</h1>
     
       <h2>Overnight Oats</h2>
+    
+      <h2>Finance Related</h2>
     
       <h2>Car Clowns</h2>
     
