@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// Represents a node in the data tree.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Node<'a> {
     /// A scalar string value.
     Str(Cow<'a, str>),

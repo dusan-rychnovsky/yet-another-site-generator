@@ -21,30 +21,86 @@ pub fn populate_all_files(
     check_dir_exists(src_dir_path)?;
     check_dir_exists(dst_dir_path)?;
 
-    for entry in WalkDir::new(src_dir_path)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter(|e| e.path().extension().is_some_and(|ext| ext == "yml"))
-    {
-        let data_file_path = entry.path();
-        let output = populate_file(data_file_path.to_str().unwrap(), None)?;
+    for (data_file_path, value) in &load_yamls(src_dir_path)? {
+        let root = Node::from_yaml(value);
+        let data_set = DataSet::from(&root);
+
+        let populated_content = populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
         let (output_path, output_dir_path) =
             construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+
         fs::create_dir_all(output_dir_path)?;
-        fs::write(&output_path, output)?;
+        fs::write(&output_path, populated_content)?;
+
+        println!("Generated: {:?}", output_path);
+    }
+    Ok(())
+}
+
+/// Looks up all data files in the given source directory recursively. Like recursive mode, each
+/// data file is populated and saved in the destination directory mirroring its source path.
+/// Additionally, the following virtual placeholders are made available for every page:
+/// - PAGES - a sequence of datasources of all pages of the blog.
+pub fn populate_blog(
+    src_dir_path: &str,
+    dst_dir_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    check_dir_exists(src_dir_path)?;
+    check_dir_exists(dst_dir_path)?;
+
+    let pages = load_yamls(src_dir_path)?;
+    let page_nodes: Vec<Node> = pages.iter().map(|(_, v)| Node::from_yaml(v)).collect();
+
+    for (data_file_path, value) in &pages {
+        let mut root_map = match Node::from_yaml(value) {
+            Node::Map(map) => map,
+            _ => std::collections::HashMap::new(),
+        };
+        root_map.insert("PAGES", Node::Seq(page_nodes.clone()));
+        let root = Node::Map(root_map);
+        let data_set = DataSet::from(&root);
+        
+        let populated_content = populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
+        let (output_path, output_dir_path) =
+            construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+
+        fs::create_dir_all(output_dir_path)?;
+        fs::write(&output_path, populated_content)?;
+        
         println!("Generated: {:?}", output_path);
     }
 
     Ok(())
 }
 
-/// TODO
-pub fn populate_blog(
-    src_dir_path: &str,
-    dst_dir_path: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    populate_all_files(src_dir_path, dst_dir_path)
+/// Collects and parses all dataset files in the given source directory recursively.
+fn load_yamls(dir_path: &str) -> Result<Vec<(PathBuf, serde_yaml::Value)>, String> {
+    let mut yamls: Vec<(PathBuf, serde_yaml::Value)> = WalkDir::new(dir_path)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "yml"))
+        .map(|e| e.path().to_path_buf())
+        .map(|p| {
+            let content = fs::read_to_string(&p).map_err(|e| {
+                format!(
+                    "Failed to read data file content. File: '{}'. Error: '{}'.",
+                    p.display(),
+                    e
+                )
+            })?;
+            let serde = data_file_parser::parse(&content).map_err(|e| {
+                format!(
+                    "Failed to parse data file content. File: '{}'. Error: '{}'.",
+                    p.display(),
+                    e
+                )
+            })?;
+            Ok::<_, String>((p, serde))
+        })
+        .collect::<Result<_, _>>()?;
+    yamls.sort_by(|(a, _), (b, _)| a.cmp(b));
+    Ok(yamls)
 }
 
 /// Checks that the given path exists and represents a directory.
@@ -110,9 +166,18 @@ pub fn populate_file(
     })?;
     let root = Node::from_yaml(&data);
     let data_set = DataSet::from(&root);
+    populate_data_set(&data_set, data_file_path, template_file_path)
+}
 
+/// Populates the template linked to the given data set and returns the populated content.
+/// The template is looked up via [`look_up_template_file_path`].
+fn populate_data_set(
+    data_set: &DataSet,
+    data_file_path: &str,
+    template_file_path: Option<&str>,
+) -> Result<String, Box<dyn std::error::Error>> {
     let template_file_path =
-        look_up_template_file_path(&data_set, data_file_path, template_file_path)?;
+        look_up_template_file_path(data_set, data_file_path, template_file_path)?;
     let template_file_content = fs::read_to_string(&template_file_path)
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to read template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
     let template_tokens = template_tokenizer::tokenize(&template_file_content)
@@ -120,7 +185,7 @@ pub fn populate_file(
     let template_tree = template_parser::parse(&template_tokens)
     .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
 
-    let result = visitor::visit(&template_tree, &data_set).map_err(|e| {
+    let result = visitor::visit(&template_tree, data_set).map_err(|e| {
         format!(
             "Failed to populate data file. File: '{}'. Error: '{}'.",
             data_file_path, e
