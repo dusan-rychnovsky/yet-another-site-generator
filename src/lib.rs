@@ -26,7 +26,8 @@ pub fn populate_all_files(
         let root = Node::from_yaml(value);
         let data_set = DataSet::from(&root);
 
-        let populated_content = populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
+        let populated_content =
+            populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
         let (output_path, output_dir_path) =
             construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
 
@@ -62,14 +63,15 @@ pub fn populate_blog(
             &categories_placeholder,
         );
         let data_set = DataSet::from(&root);
-        
-        let populated_content = populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
+
+        let populated_content =
+            populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
         let (output_path, output_dir_path) =
             construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
 
         fs::create_dir_all(output_dir_path)?;
         fs::write(&output_path, populated_content)?;
-        
+
         println!("Generated: {:?}", output_path);
     }
 

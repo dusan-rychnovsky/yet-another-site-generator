@@ -95,7 +95,9 @@ mod tests {
 
     fn child<'a>(node: &'a Node<'a>, key: &str) -> &'a Node<'a> {
         match node {
-            Node::Map(map) => map.get(key).unwrap_or_else(|| panic!("missing key '{key}'")),
+            Node::Map(map) => map
+                .get(key)
+                .unwrap_or_else(|| panic!("missing key '{key}'")),
             other => panic!("expected a map, got {other:?}"),
         }
     }
@@ -141,7 +143,10 @@ mod tests {
         let home = &seq(&categories)[0];
         assert!(page_titles(home).is_empty());
 
-        assert_eq!(category_names(child(home, "subcategories")), vec!["cooking"]);
+        assert_eq!(
+            category_names(child(home, "subcategories")),
+            vec!["cooking"]
+        );
         let cooking = &seq(child(home, "subcategories"))[0];
         assert!(page_titles(cooking).is_empty());
 
@@ -184,7 +189,10 @@ mod tests {
         let categories = build(&nodes);
 
         let home = &seq(&categories)[0];
-        assert_eq!(category_names(child(home, "subcategories")), vec!["finance"]);
+        assert_eq!(
+            category_names(child(home, "subcategories")),
+            vec!["finance"]
+        );
         let finance = &seq(child(home, "subcategories"))[0];
         assert_eq!(page_titles(finance), vec!["Finance"]);
         assert_eq!(category_names(child(finance, "subcategories")), vec!["mmm"]);

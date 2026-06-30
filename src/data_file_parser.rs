@@ -116,12 +116,12 @@ impl<'a> DataSet<'a> {
                 None
             }
         } else {
-            path.segments.iter().try_fold(self.root, |acc, segment| {
-                match acc {
+            path.segments
+                .iter()
+                .try_fold(self.root, |acc, segment| match acc {
                     Node::Map(map) => map.get(*segment),
                     _ => None,
-                }
-            })
+                })
         }
     }
 }
