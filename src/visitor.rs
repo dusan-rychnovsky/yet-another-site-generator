@@ -1,48 +1,71 @@
 use crate::data_file_parser::DataSet;
-use crate::expressions::Predicate::Exists;
+use crate::expressions::{Path, Predicate::Exists};
 use crate::template_parser::{TemplateNode, TemplateNode::*, TemplateTree};
 
 /// Populates the given [`TemplateTree`] with values from the given [`DataSet`].
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
-    visit_node(&tree.root, data)
+    visit_node(&tree.root, &[data])
 }
 
 /// Populates the subtree rooted at the given [`TemplateNode`] with values from the given [`DataSet`].
-fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
+fn visit_node(node: &TemplateNode, scopes: &[&DataSet]) -> Result<String, String> {
     match node {
         Seq(nodes) => {
             let mut output = String::new();
             for child in nodes {
-                let str = visit_node(child, data)?;
+                let str = visit_node(child, scopes)?;
                 output.push_str(&str);
             }
             Ok(output)
         }
         Var(path) => {
-            let val = data.get_str(path)?;
+            let val = get_str(scopes, path)?;
             let val = replace_asterix(val)?;
             Ok(val)
         }
         Text(text) => Ok(text.to_string()),
         ForEach(var, path, body) => {
-            let items = data.list(var, path)?;
+            let current_scope = scopes
+                .last()
+                .ok_or_else(|| "Data stack is empty.".to_string())?;
+            let items = current_scope.list(var, path)?;
             let mut output = String::new();
-            for item in items {
-                let str = visit_node(body, &item)?;
+            for item in &items {
+                let mut inner = scopes.to_vec();
+                inner.push(item);
+                let str = visit_node(body, &inner)?;
                 output.push_str(&str);
             }
             Ok(output)
         }
         If(expr, body) => match expr.predicate {
             Exists => {
-                if data.exists(&expr.path) {
-                    visit_node(body, data)
+                if exists(scopes, &expr.path) {
+                    visit_node(body, scopes)
                 } else {
                     Ok(String::new())
                 }
             }
         },
     }
+}
+
+fn get_str<'a>(scopes: &[&'a DataSet<'_>], path: &Path) -> Result<&'a str, String> {
+    scopes
+        .iter()
+        .rev()
+        .find_map(|scope| scope.get_str(path).transpose())
+        .transpose()?
+        .ok_or_else(|| {
+            format!(
+                "Path [{}] is not defined in data file.",
+                path.segments.join(".")
+            )
+        })
+}
+
+fn exists(scopes: &[&DataSet], path: &Path) -> bool {
+    scopes.iter().any(|scope| scope.exists(path))
 }
 
 /// Replaces asterisks in the given text with HTML <em></em> tags.
@@ -216,6 +239,56 @@ mod tests {
             "\
 - link: Go Basics
 - link: Advanced Go
+"
+        );
+    }
+
+    #[test]
+    fn visit_foreach_can_access_outer_scope() {
+        let data = Value::Mapping(Mapping::from_iter(vec![
+            (
+                Value::String("category".to_string()),
+                Value::String("Food".to_string()),
+            ),
+            (
+                Value::String("subcategories".to_string()),
+                Value::Sequence(vec![
+                    Value::Mapping(Mapping::from_iter(vec![(
+                        Value::String("title".to_string()),
+                        Value::String("Recipes".to_string()),
+                    )])),
+                    Value::Mapping(Mapping::from_iter(vec![(
+                        Value::String("title".to_string()),
+                        Value::String("Techniques".to_string()),
+                    )])),
+                ]),
+            ),
+        ]));
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Seq(vec![
+                Box::new(Text("Categories:\n")),
+                Box::new(ForEach(
+                    "subcategory",
+                    Path::from_segments(vec!["subcategories"]),
+                    Box::new(Seq(vec![
+                        Box::new(Text("- ")),
+                        Box::new(Var(Path::from_segments(vec!["category"]))),
+                        Box::new(Text(": ")),
+                        Box::new(Var(Path::from_segments(vec!["subcategory", "title"]))),
+                        Box::new(Text("\n")),
+                    ])),
+                )),
+            ]),
+        };
+        let result = unwrap(visit(&tree, &data_set));
+        assert_eq!(
+            result,
+            "\
+Categories:
+- Food: Recipes
+- Food: Techniques
 "
         );
     }

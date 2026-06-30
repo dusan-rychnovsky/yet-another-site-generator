@@ -33,7 +33,7 @@ fn populate_blog_exposes_pages_and_categories_placeholders_and_generates_pages()
           <h3>recipes</h3>
           <ul>
             
-              <li>Overnight Oats</li>
+              <li>Overnight Oats - tests/data/blog/cooking/recipes/overnight-oats.yml vs tests/data/blog/index.yml</li>
             
           </ul>
         
@@ -48,7 +48,7 @@ fn populate_blog_exposes_pages_and_categories_placeholders_and_generates_pages()
           <h3>mmm</h3>
           <ul>
             
-              <li>Car Clowns</li>
+              <li>Car Clowns - tests/data/blog/finance/mmm/car-clowns.yml vs tests/data/blog/index.yml</li>
             
           </ul>
         

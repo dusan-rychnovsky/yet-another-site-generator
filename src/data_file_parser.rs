@@ -58,18 +58,15 @@ impl<'a> DataSet<'a> {
     /// Gets a string value from the represented tree at the given path.
     /// Returns an error if the path is not defined in the tree
     /// or if it does not reference a string.
-    pub fn get_str(&self, path: &Path) -> Result<&str, String> {
+    pub fn get_str(&self, path: &Path) -> Result<Option<&str>, String> {
         let value = Self::locate(self, path);
         match value {
-            Some(Node::Str(value)) => Ok(value.as_ref()),
+            Some(Node::Str(value)) => Ok(Some(value.as_ref())),
             Some(_) => Err(format!(
                 "Path [{}] does not reference a string in data file.",
                 path.segments.join(".")
             )),
-            None => Err(format!(
-                "Path [{}] is not defined in data file.",
-                path.segments.join(".")
-            )),
+            None => Ok(None),
         }
     }
 

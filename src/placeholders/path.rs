@@ -7,7 +7,10 @@ use std::path::Path;
 pub fn embed<'a>(page: Node<'a>, path: &Path) -> Node<'a> {
     match page {
         Node::Map(mut map) => {
-            map.insert("PATH", Node::Str(Cow::Owned(path.to_string_lossy().into_owned())));
+            map.insert(
+                "PATH",
+                Node::Str(Cow::Owned(path.to_string_lossy().into_owned())),
+            );
             Node::Map(map)
         }
         other => other,

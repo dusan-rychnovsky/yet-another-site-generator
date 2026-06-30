@@ -217,6 +217,9 @@ fn look_up_template_file_path(
     } else {
         let template_file_path = data_set
             .get_str(&expressions::Path::from_segment("template"))
+            .and_then(|v| {
+                v.ok_or_else(|| "Path [template] is not defined in data file.".to_string())
+            })
             .map_err(|e| {
                 format!(
                     "Failed to parse data file content. File: '{}'. Error: '{}'.",
