@@ -80,3 +80,115 @@ fn category_to_node<'a>(name: &'a str, category: CategoryBuilder<'a>) -> Node<'a
     map.insert("subcategories", categories_to_node(category.subcategories));
     Node::Map(map)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Parses the given yaml documents into values, keeping them alive so [`Node`]s can borrow them.
+    fn parse_pages(yamls: &[&str]) -> Vec<serde_yaml::Value> {
+        yamls
+            .iter()
+            .map(|yaml| serde_yaml::from_str(yaml).expect("valid yaml"))
+            .collect()
+    }
+
+    fn child<'a>(node: &'a Node<'a>, key: &str) -> &'a Node<'a> {
+        match node {
+            Node::Map(map) => map.get(key).unwrap_or_else(|| panic!("missing key '{key}'")),
+            other => panic!("expected a map, got {other:?}"),
+        }
+    }
+
+    fn seq<'a>(node: &'a Node<'a>) -> &'a [Node<'a>] {
+        match node {
+            Node::Seq(items) => items,
+            other => panic!("expected a sequence, got {other:?}"),
+        }
+    }
+
+    fn text<'a>(node: &'a Node<'a>) -> &'a str {
+        match node {
+            Node::Str(value) => value.as_ref(),
+            other => panic!("expected a string, got {other:?}"),
+        }
+    }
+
+    /// Names of the categories in the given `CATEGORIES`/`subcategories` sequence, in order.
+    fn category_names<'a>(categories: &'a Node<'a>) -> Vec<&'a str> {
+        seq(categories)
+            .iter()
+            .map(|category| text(child(category, "name")))
+            .collect()
+    }
+
+    /// Titles of the pages directly assigned to the given category, in order.
+    fn page_titles<'a>(category: &'a Node<'a>) -> Vec<&'a str> {
+        seq(child(category, "pages"))
+            .iter()
+            .map(|page| text(child(page, "title")))
+            .collect()
+    }
+
+    #[test]
+    fn build_nests_a_page_under_its_full_category_chain() {
+        let values = parse_pages(&["title: Oats\ncategories: [home, cooking, recipes]"]);
+        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+
+        let categories = build(&nodes);
+
+        assert_eq!(category_names(&categories), vec!["home"]);
+        let home = &seq(&categories)[0];
+        assert!(page_titles(home).is_empty());
+
+        assert_eq!(category_names(child(home, "subcategories")), vec!["cooking"]);
+        let cooking = &seq(child(home, "subcategories"))[0];
+        assert!(page_titles(cooking).is_empty());
+
+        assert_eq!(
+            category_names(child(cooking, "subcategories")),
+            vec!["recipes"]
+        );
+        let recipes = &seq(child(cooking, "subcategories"))[0];
+        assert_eq!(page_titles(recipes), vec!["Oats"]);
+        assert!(category_names(child(recipes, "subcategories")).is_empty());
+    }
+
+    #[test]
+    fn build_ignores_pages_without_a_categories_chain() {
+        let values = parse_pages(&[
+            "title: Post\ncategories: [home, blog]",
+            "title: Standalone",
+            "title: Empty\ncategories: []",
+            "title: Scalar\ncategories: home",
+        ]);
+        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+
+        let categories = build(&nodes);
+
+        assert_eq!(category_names(&categories), vec!["home"]);
+        let home = &seq(&categories)[0];
+        assert_eq!(category_names(child(home, "subcategories")), vec!["blog"]);
+        let blog = &seq(child(home, "subcategories"))[0];
+        assert_eq!(page_titles(blog), vec!["Post"]);
+    }
+
+    #[test]
+    fn build_lets_a_category_hold_both_pages_and_subcategories() {
+        let values = parse_pages(&[
+            "title: Finance\ncategories: [home, finance]",
+            "title: Car Clowns\ncategories: [home, finance, mmm]",
+        ]);
+        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+
+        let categories = build(&nodes);
+
+        let home = &seq(&categories)[0];
+        assert_eq!(category_names(child(home, "subcategories")), vec!["finance"]);
+        let finance = &seq(child(home, "subcategories"))[0];
+        assert_eq!(page_titles(finance), vec!["Finance"]);
+        assert_eq!(category_names(child(finance, "subcategories")), vec!["mmm"]);
+        let mmm = &seq(child(finance, "subcategories"))[0];
+        assert_eq!(page_titles(mmm), vec!["Car Clowns"]);
+    }
+}
