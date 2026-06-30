@@ -44,6 +44,7 @@ pub fn populate_all_files(
 /// Additionally, the following virtual placeholders are made available for every page:
 /// - PAGES - a sequence of datasources of all pages of the blog.
 /// - CATEGORIES - a tree of datasources of all pages groupped by categories chains.
+/// - PATH - embedded in every page's datasource; the filesystem path of the page's data file.
 pub fn populate_blog(
     src_dir_path: &str,
     dst_dir_path: &str,
@@ -52,13 +53,16 @@ pub fn populate_blog(
     check_dir_exists(dst_dir_path)?;
 
     let pages = load_yamls(src_dir_path)?;
-    let page_nodes: Vec<Node> = pages.iter().map(|(_, v)| Node::from_yaml(v)).collect();
+    let page_nodes: Vec<Node> = pages
+        .iter()
+        .map(|(file_path, value)| placeholders::path::embed(Node::from_yaml(value), file_path))
+        .collect();
     let pages_placeholder = placeholders::pages::build(&page_nodes);
     let categories_placeholder = placeholders::categories::build(&page_nodes);
 
-    for (data_file_path, value) in &pages {
+    for ((data_file_path, _), page_node) in pages.iter().zip(&page_nodes) {
         let root = placeholders::insert_virtual_placeholders(
-            value,
+            page_node,
             &pages_placeholder,
             &categories_placeholder,
         );
