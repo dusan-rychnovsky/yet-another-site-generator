@@ -14,6 +14,7 @@ pub enum TemplateNode<'a> {
     Seq(Vec<Box<TemplateNode<'a>>>),
     Text(&'a str),
     Var(Path<'a>),
+    Func(&'a str, Vec<Path<'a>>),
     ForEach(&'a str, Path<'a>, Box<TemplateNode<'a>>),
     If(Expr<'a>, Box<TemplateNode<'a>>),
 }
@@ -44,6 +45,9 @@ fn parse_nodes<'a>(
             }
             TemplateToken::Var(var) => {
                 nodes.push(Box::new(TemplateNode::Var(var.clone())));
+            }
+            TemplateToken::Func(name, args) => {
+                nodes.push(Box::new(TemplateNode::Func(name, args.clone())));
             }
             TemplateToken::For(var, expr) => {
                 let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
@@ -123,6 +127,36 @@ mod tests {
                 Box::new(Text("! Welcome to ")),
                 Box::new(Var(Path::from_segments(vec!["place", "address"]))),
                 Box::new(Text("."))
+            ])
+        );
+    }
+
+    #[test]
+    fn parse_handles_func() {
+        let tokens = vec![
+            TemplateToken::Text("<a href=\""),
+            TemplateToken::Func(
+                "LINK",
+                vec![
+                    Path::from_segment("PATH"),
+                    Path::from_segments(vec!["page", "PATH"]),
+                ],
+            ),
+            TemplateToken::Text("\">"),
+        ];
+        let result = parse(&tokens).unwrap();
+        assert_eq!(
+            result.root,
+            Seq(vec![
+                Box::new(Text("<a href=\"")),
+                Box::new(Func(
+                    "LINK",
+                    vec![
+                        Path::from_segment("PATH"),
+                        Path::from_segments(vec!["page", "PATH"]),
+                    ]
+                )),
+                Box::new(Text("\">")),
             ])
         );
     }

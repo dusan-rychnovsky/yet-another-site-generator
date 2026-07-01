@@ -1,6 +1,7 @@
 use crate::data_file_parser::DataSet;
 use crate::expressions::{Path, Predicate::Exists};
 use crate::template_parser::{TemplateNode, TemplateNode::*, TemplateTree};
+use std::path::Path as FsPath;
 
 /// Populates the given [`TemplateTree`] with values from the given [`DataSet`].
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
@@ -22,6 +23,13 @@ fn visit_node(node: &TemplateNode, scopes: &[&DataSet]) -> Result<String, String
             let val = get_str(scopes, path)?;
             let val = replace_asterix(val)?;
             Ok(val)
+        }
+        Func(name, args) => {
+            let output = match *name {
+                "LINK" => eval_link(scopes, args),
+                _ => Err(format!("Unknown function: '{}'.", name)),
+            }?;
+            Ok(output)
         }
         Text(text) => Ok(text.to_string()),
         ForEach(var, path, body) => {
@@ -66,6 +74,46 @@ fn get_str<'a>(scopes: &[&'a DataSet<'_>], path: &Path) -> Result<&'a str, Strin
 
 fn exists(scopes: &[&DataSet], path: &Path) -> bool {
     scopes.iter().any(|scope| scope.exists(path))
+}
+
+/// Evaluates the `LINK` function. It expects two path arguments - a source and a target file path -
+/// and returns a relative link pointing from the source to the target.
+fn eval_link(scopes: &[&DataSet], args: &[Path]) -> Result<String, String> {
+    if args.len() != 2 {
+        return Err(format!(
+            "Function 'LINK' expects 2 arguments, got {}.",
+            args.len()
+        ));
+    }
+    let source = get_str(scopes, &args[0])?;
+    let target = get_str(scopes, &args[1])?;
+    Ok(relative_link(source, target))
+}
+
+/// Computes a relative link from the `source` file to the `target` file. Both are treated as file
+/// paths; the result is expressed relative to the directory containing `source` and always uses `/`
+/// as the separator so that it is a valid href regardless of the host platform.
+fn relative_link(source: &str, target: &str) -> String {
+    let source_dir = FsPath::new(source)
+        .parent()
+        .unwrap_or_else(|| FsPath::new(""));
+    let source_components: Vec<_> = source_dir.components().collect();
+    let target_components: Vec<_> = FsPath::new(target).components().collect();
+
+    let common = source_components
+        .iter()
+        .zip(target_components.iter())
+        .take_while(|(a, b)| a == b)
+        .count();
+
+    let mut parts: Vec<String> = Vec::new();
+    for _ in common..source_components.len() {
+        parts.push("..".to_string());
+    }
+    for component in &target_components[common..] {
+        parts.push(component.as_os_str().to_string_lossy().into_owned());
+    }
+    parts.join("/")
 }
 
 /// Replaces asterisks in the given text with HTML <em></em> tags.
@@ -126,6 +174,89 @@ mod tests {
         };
         let result = unwrap(visit(&tree, &data_set));
         assert_eq!(result, "Hello, Julia!");
+    }
+
+    #[test]
+    fn visit_func_link_to_nested_file() {
+        let data = Value::Mapping(Mapping::from_iter(vec![
+            (
+                Value::String("PATH".to_string()),
+                Value::String("blog/index.yml".to_string()),
+            ),
+            (
+                Value::String("target".to_string()),
+                Value::String("blog/cooking/recipes/oats.yml".to_string()),
+            ),
+        ]));
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Func(
+                "LINK",
+                vec![Path::from_segment("PATH"), Path::from_segment("target")],
+            ),
+        };
+        let result = unwrap(visit(&tree, &data_set));
+        assert_eq!(result, "cooking/recipes/oats.yml");
+    }
+
+    #[test]
+    fn visit_func_link_goes_up_directories() {
+        let data = Value::Mapping(Mapping::from_iter(vec![
+            (
+                Value::String("PATH".to_string()),
+                Value::String("blog/cooking/recipes/oats.yml".to_string()),
+            ),
+            (
+                Value::String("target".to_string()),
+                Value::String("blog/index.yml".to_string()),
+            ),
+        ]));
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Func(
+                "LINK",
+                vec![Path::from_segment("PATH"), Path::from_segment("target")],
+            ),
+        };
+        let result = unwrap(visit(&tree, &data_set));
+        assert_eq!(result, "../../index.yml");
+    }
+
+    #[test]
+    fn visit_func_fails_for_unknown_function() {
+        let data = Value::Mapping(Mapping::new());
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Func("bogus", Vec::new()),
+        };
+        let err = visit(&tree, &data_set).unwrap_err();
+        assert!(
+            err.contains("Unknown function: 'bogus'."),
+            "Got error: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn visit_func_link_fails_with_wrong_argument_count() {
+        let data = Value::Mapping(Mapping::from_iter(vec![(
+            Value::String("PATH".to_string()),
+            Value::String("blog/index.yml".to_string()),
+        )]));
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Func("LINK", vec![Path::from_segment("PATH")]),
+        };
+        let err = visit(&tree, &data_set).unwrap_err();
+        assert!(
+            err.contains("Function 'LINK' expects 2 arguments, got 1."),
+            "Got error: {}",
+            err
+        );
     }
 
     #[test]

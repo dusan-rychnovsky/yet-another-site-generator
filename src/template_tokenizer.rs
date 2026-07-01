@@ -5,6 +5,7 @@ use crate::expressions::{Expr, Path};
 pub enum TemplateToken<'a> {
     Text(&'a str),
     Var(Path<'a>),
+    Func(&'a str, Vec<Path<'a>>),
     For(&'a str, Path<'a>),
     EndFor(&'a str),
     If(Expr<'a>),
@@ -52,9 +53,42 @@ impl<'a> TemplateToken<'a> {
             "endfor" => Self::parse_endfor_tag(parts)?,
             "if" => Self::parse_if_tag(parts)?,
             "endif" => Self::parse_endif_tag(parts)?,
+            _ if input.contains('(') => Self::parse_func_tag(input.trim())?,
             _ => Self::parse_var_tag(parts)?,
         };
         Ok(tag)
+    }
+
+    /// Parses the given string into a [`TemplateToken::Func`]. Expected syntax:
+    /// `name(arg1, arg2, ...)`, where each argument is a [`Path`]. Whitespace around the name and
+    /// arguments is ignored.
+    fn parse_func_tag(input: &'a str) -> Result<TemplateToken<'a>, String> {
+        let open = input
+            .find('(')
+            .ok_or_else(|| format!("Invalid function syntax - missing '(': '{}'.", input))?;
+        if !input.ends_with(')') {
+            return Err(format!(
+                "Invalid function syntax - missing closing ')': '{}'.",
+                input
+            ));
+        }
+        let name = input[..open].trim();
+        if name.is_empty() {
+            return Err(format!(
+                "Invalid function syntax - missing function name: '{}'.",
+                input
+            ));
+        }
+        let args_str = input[open + 1..input.len() - 1].trim();
+        let args = if args_str.is_empty() {
+            Vec::new()
+        } else {
+            args_str
+                .split(',')
+                .map(|arg| Path::parse(arg.trim()))
+                .collect()
+        };
+        Ok(TemplateToken::Func(name, args))
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::Var`].
@@ -148,6 +182,37 @@ mod tests {
             vec![Var(Path::from_segments(vec!["section", "title"]))],
             result
         );
+    }
+
+    #[test]
+    fn tokenize_handles_func_with_arguments() {
+        let result = tokenize("[LINK(PATH, page.PATH)]").unwrap();
+        assert_eq!(
+            vec![Func(
+                "LINK",
+                vec![
+                    Path::from_segment("PATH"),
+                    Path::from_segments(vec!["page", "PATH"]),
+                ]
+            )],
+            result
+        );
+    }
+
+    #[test]
+    fn tokenize_handles_func_with_no_arguments() {
+        let result = tokenize("[now()]").unwrap();
+        assert_eq!(vec![Func("now", Vec::new())], result);
+    }
+
+    #[test]
+    fn tokenize_fails_if_func_has_no_closing_paren() {
+        assert_invalid_syntax("[LINK(PATH, page.PATH]", "missing closing ')'");
+    }
+
+    #[test]
+    fn tokenize_fails_if_func_has_no_name() {
+        assert_invalid_syntax("[(PATH, page.PATH)]", "missing function name");
     }
 
     #[test]

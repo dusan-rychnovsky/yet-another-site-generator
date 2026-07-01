@@ -19,7 +19,7 @@
           <h3>[sub2category.name]</h3>
           <ul>
             [for page in sub2category.pages]
-              <li>[page.title] - [page.PATH] vs [PATH]</li>
+              <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
             [endfor page]
           </ul>
         [endfor sub2category]
