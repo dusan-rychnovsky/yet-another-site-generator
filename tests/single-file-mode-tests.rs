@@ -98,7 +98,7 @@ fn populate_file_fails_if_template_file_has_lexical_error() {
     assert_populate_file_fails_with_error(
         "tests/data/recipes/salads/shopska-salad.yml",
         "tests/data/invalid-files/data-with-template-with-lexical-error/template-with-lexical-error.html",
-        "Failed to populate data file. File: 'tests/data/recipes/salads/shopska-salad.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/template-with-lexical-error.html'. Error: 'Missing closing bracket.'",
+        "Failed to populate data file. File: 'tests/data/recipes/salads/shopska-salad.yml'. Failed to tokenize template file content. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/template-with-lexical-error.html'. Error: 'Missing closing bracket.'",
     );
 }
 

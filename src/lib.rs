@@ -3,11 +3,13 @@ use data_file_parser::Node;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use template_cache::TemplateCache;
 use walkdir::WalkDir;
 
 pub mod data_file_parser;
 pub mod expressions;
 pub mod placeholders;
+pub mod template_cache;
 pub mod template_parser;
 pub mod template_tokenizer;
 pub mod visitor;
@@ -22,12 +24,17 @@ pub fn populate_all_files(
     check_dir_exists(src_dir_path)?;
     check_dir_exists(dst_dir_path)?;
 
+    let mut template_cache = TemplateCache::new();
     for (data_file_path, value) in &load_yamls(src_dir_path)? {
         let root = Node::from_yaml(value);
         let data_set = DataSet::from(&root);
 
-        let populated_content =
-            populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
+        let populated_content = populate_data_set(
+            &data_set,
+            data_file_path.to_str().unwrap(),
+            None,
+            &mut template_cache,
+        )?;
         let (output_path, output_dir_path) =
             construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
 
@@ -60,6 +67,7 @@ pub fn populate_blog(
     let pages_placeholder = placeholders::pages::build(&page_nodes);
     let categories_placeholder = placeholders::categories::build(&page_nodes);
 
+    let mut template_cache = TemplateCache::new();
     for ((data_file_path, _), page_node) in pages.iter().zip(&page_nodes) {
         let root = placeholders::insert_virtual_placeholders(
             page_node,
@@ -68,8 +76,12 @@ pub fn populate_blog(
         );
         let data_set = DataSet::from(&root);
 
-        let populated_content =
-            populate_data_set(&data_set, data_file_path.to_str().unwrap(), None)?;
+        let populated_content = populate_data_set(
+            &data_set,
+            data_file_path.to_str().unwrap(),
+            None,
+            &mut template_cache,
+        )?;
         let (output_path, output_dir_path) =
             construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
 
@@ -175,7 +187,13 @@ pub fn populate_file(
     })?;
     let root = Node::from_yaml(&data);
     let data_set = DataSet::from(&root);
-    populate_data_set(&data_set, data_file_path, template_file_path)
+    let mut template_cache = TemplateCache::new();
+    populate_data_set(
+        &data_set,
+        data_file_path,
+        template_file_path,
+        &mut template_cache,
+    )
 }
 
 /// Populates the template linked to the given data set and returns the populated content.
@@ -184,17 +202,20 @@ fn populate_data_set(
     data_set: &DataSet,
     data_file_path: &str,
     template_file_path: Option<&str>,
+    template_cache: &mut TemplateCache,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let template_file_path =
         look_up_template_file_path(data_set, data_file_path, template_file_path)?;
-    let template_file_content = fs::read_to_string(&template_file_path)
-    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to read template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
-    let template_tokens = template_tokenizer::tokenize(&template_file_content)
-    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
-    let template_tree = template_parser::parse(&template_tokens)
-    .map_err(|e| format!("Failed to populate data file. File: '{}'. Failed to parse template file content. File: '{}'. Error: '{}'.", data_file_path, template_file_path, e))?;
+    let template_tree = template_cache
+        .load_template(&template_file_path)
+        .map_err(|e| {
+            format!(
+                "Failed to populate data file. File: '{}'. {}",
+                data_file_path, e
+            )
+        })?;
 
-    let result = visitor::visit(&template_tree, data_set).map_err(|e| {
+    let result = visitor::visit(template_tree, data_set).map_err(|e| {
         format!(
             "Failed to populate data file. File: '{}'. Error: '{}'.",
             data_file_path, e
