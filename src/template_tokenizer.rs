@@ -10,6 +10,7 @@ pub enum TemplateToken<'a> {
     EndFor(&'a str),
     If(Expr<'a>),
     EndIf,
+    Include(&'a str)
 }
 
 /// Tokenizes the given template file into a sequence of [`TemplateToken`].
@@ -49,6 +50,7 @@ impl<'a> TemplateToken<'a> {
             return Err("Tags cannot be empty.".to_string());
         }
         let tag = match parts[0] {
+            "include" => Self::parse_include_tag(parts)?,
             "for" => Self::parse_for_tag(parts)?,
             "endfor" => Self::parse_endfor_tag(parts)?,
             "if" => Self::parse_if_tag(parts)?,
@@ -151,6 +153,23 @@ impl<'a> TemplateToken<'a> {
         } else {
             Err(format!(
                 "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
+                parts
+            ))
+        }
+    }
+
+    /// Parses the given sequence of strings into a [`TemplateToken::Include`].
+    fn parse_include_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+        assert!(
+            parts[0] == "include",
+            "Expected 'include' tag, got: {}",
+            parts[0]
+        );
+        if parts.len() == 2 {
+            Ok(TemplateToken::Include(parts[1]))
+        } else {
+            Err(format!(
+                "Invalid include tag syntax. Incorrect number of parts - expected 2 (include, path), got {:?}.",
                 parts
             ))
         }
@@ -307,6 +326,12 @@ mod tests {
         assert_invalid_syntax("[  ]", "Tags cannot be empty.");
     }
 
+    #[test]
+    fn tokenize_handles_include() {
+        let result = tokenize("[ include snippets/menu.html ]").unwrap();
+        assert_eq!(vec![Include("snippets/menu.html")], result);
+    }
+    
     fn assert_invalid_syntax(input: &str, expected: &str) {
         let err = super::tokenize(input).unwrap_err();
         assert!(

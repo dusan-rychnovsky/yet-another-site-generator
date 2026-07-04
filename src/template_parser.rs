@@ -82,6 +82,9 @@ fn parse_nodes<'a>(
                     return Err(format!("Unexpected token EndIf nested in {:?}.", context));
                 }
             }
+            TemplateToken::Include(_) => {
+                panic!("Include tokens need to be handled during tokenization.");
+            }
         }
     }
     Ok((nodes, pos))
