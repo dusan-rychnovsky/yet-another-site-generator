@@ -2,26 +2,26 @@ use crate::expressions::{Expr, Path};
 
 /// Represents a lexical token of a template file.
 #[derive(Debug, PartialEq)]
-pub enum TemplateToken<'a> {
-    Text(&'a str),
-    Var(Path<'a>),
-    Func(&'a str, Vec<Path<'a>>),
-    For(&'a str, Path<'a>),
-    EndFor(&'a str),
-    If(Expr<'a>),
+pub enum TemplateToken {
+    Text(String),
+    Var(Path),
+    Func(String, Vec<Path>),
+    For(String, Path),
+    EndFor(String),
+    If(Expr),
     EndIf,
-    Include(&'a str)
+    Include(String),
 }
 
 /// Tokenizes the given template file into a sequence of [`TemplateToken`].
-pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
+pub fn tokenize(input: &str) -> Result<Vec<TemplateToken>, String> {
     let mut tokens = Vec::new();
     let mut rest = input;
     while !rest.is_empty() {
         if let Some(from) = rest.find('[') {
             if from > 0 {
                 let text = &rest[..from];
-                let text = TemplateToken::Text(text);
+                let text = TemplateToken::Text(text.to_string());
                 tokens.push(text);
             }
             if let Some(to) = rest.find(']') {
@@ -34,7 +34,7 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
             }
         } else {
             let text = rest;
-            let text = TemplateToken::Text(text);
+            let text = TemplateToken::Text(text.to_string());
             tokens.push(text);
             break;
         }
@@ -42,9 +42,9 @@ pub fn tokenize<'a>(input: &'a str) -> Result<Vec<TemplateToken<'a>>, String> {
     Ok(tokens)
 }
 
-impl<'a> TemplateToken<'a> {
+impl TemplateToken {
     /// Parses the given string into a [`TemplateToken`].
-    fn parse_tag(input: &'a str) -> Result<Self, String> {
+    fn parse_tag(input: &str) -> Result<Self, String> {
         let parts: Vec<&str> = input.split_whitespace().collect();
         if parts.is_empty() {
             return Err("Tags cannot be empty.".to_string());
@@ -64,7 +64,7 @@ impl<'a> TemplateToken<'a> {
     /// Parses the given string into a [`TemplateToken::Func`]. Expected syntax:
     /// `name(arg1, arg2, ...)`, where each argument is a [`Path`]. Whitespace around the name and
     /// arguments is ignored.
-    fn parse_func_tag(input: &'a str) -> Result<TemplateToken<'a>, String> {
+    fn parse_func_tag(input: &str) -> Result<TemplateToken, String> {
         let open = input
             .find('(')
             .ok_or_else(|| format!("Invalid function syntax - missing '(': '{}'.", input))?;
@@ -90,11 +90,11 @@ impl<'a> TemplateToken<'a> {
                 .map(|arg| Path::parse(arg.trim()))
                 .collect()
         };
-        Ok(TemplateToken::Func(name, args))
+        Ok(TemplateToken::Func(name.to_string(), args))
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::Var`].
-    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, &str> {
+    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
         if parts.len() == 1 {
             Ok(TemplateToken::Var(Path::parse(parts[0])))
         } else {
@@ -103,7 +103,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::EndIf`].
-    fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+    fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
             parts[0] == "endif",
             "Expected 'endif' tag, got: {}",
@@ -117,7 +117,7 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::If`].
-    fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+    fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
         let expr = Expr::parse(parts[1..].to_vec())
             .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
@@ -125,11 +125,14 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::For`].
-    fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+    fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
         if parts.len() == 4 {
             if parts[2] == "in" {
-                Ok(TemplateToken::For(parts[1], Path::parse(parts[3])))
+                Ok(TemplateToken::For(
+                    parts[1].to_string(),
+                    Path::parse(parts[3]),
+                ))
             } else {
                 Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
             }
@@ -142,14 +145,14 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::EndFor`].
-    fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+    fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
             parts[0] == "endfor",
             "Expected 'endfor' tag, got: {}",
             parts[0]
         );
         if parts.len() == 2 {
-            Ok(TemplateToken::EndFor(parts[1]))
+            Ok(TemplateToken::EndFor(parts[1].to_string()))
         } else {
             Err(format!(
                 "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
@@ -159,14 +162,14 @@ impl<'a> TemplateToken<'a> {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::Include`].
-    fn parse_include_tag(parts: Vec<&str>) -> Result<TemplateToken<'_>, String> {
+    fn parse_include_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
             parts[0] == "include",
             "Expected 'include' tag, got: {}",
             parts[0]
         );
         if parts.len() == 2 {
-            Ok(TemplateToken::Include(parts[1]))
+            Ok(TemplateToken::Include(parts[1].to_string()))
         } else {
             Err(format!(
                 "Invalid include tag syntax. Incorrect number of parts - expected 2 (include, path), got {:?}.",
@@ -185,7 +188,7 @@ mod tests {
     #[test]
     fn tokenize_handles_text() {
         let result = tokenize("Hello, world!").unwrap();
-        assert_eq!(vec![Text("Hello, world!")], result);
+        assert_eq!(vec![Text("Hello, world!".to_string())], result);
     }
 
     #[test]
@@ -208,7 +211,7 @@ mod tests {
         let result = tokenize("[LINK(PATH, page.PATH)]").unwrap();
         assert_eq!(
             vec![Func(
-                "LINK",
+                "LINK".to_string(),
                 vec![
                     Path::from_segment("PATH"),
                     Path::from_segments(vec!["page", "PATH"]),
@@ -221,7 +224,7 @@ mod tests {
     #[test]
     fn tokenize_handles_func_with_no_arguments() {
         let result = tokenize("[now()]").unwrap();
-        assert_eq!(vec![Func("now", Vec::new())], result);
+        assert_eq!(vec![Func("now".to_string(), Vec::new())], result);
     }
 
     #[test]
@@ -245,9 +248,9 @@ mod tests {
         let result = tokenize("Hello, [section.title]!").unwrap();
         assert_eq!(
             vec![
-                Text("Hello, "),
+                Text("Hello, ".to_string()),
                 Var(Path::from_segments(vec!["section", "title"])),
-                Text("!")
+                Text("!".to_string())
             ],
             result
         );
@@ -264,9 +267,12 @@ mod tests {
         .unwrap();
         assert_eq!(
             vec![
-                For("content", Path::from_segments(vec!["section", "content"])),
-                Text("\n  Some text.\n"),
-                EndFor("content")
+                For(
+                    "content".to_string(),
+                    Path::from_segments(vec!["section", "content"])
+                ),
+                Text("\n  Some text.\n".to_string()),
+                EndFor("content".to_string())
             ],
             result
         );
@@ -301,7 +307,7 @@ mod tests {
         assert_eq!(
             vec![
                 If(Expr::from(Exists, vec!["section", "subsections"])),
-                Text("\n  Some text.\n"),
+                Text("\n  Some text.\n".to_string()),
                 EndIf
             ],
             result
@@ -329,9 +335,9 @@ mod tests {
     #[test]
     fn tokenize_handles_include() {
         let result = tokenize("[ include snippets/menu.html ]").unwrap();
-        assert_eq!(vec![Include("snippets/menu.html")], result);
+        assert_eq!(vec![Include("snippets/menu.html".to_string())], result);
     }
-    
+
     fn assert_invalid_syntax(input: &str, expected: &str) {
         let err = super::tokenize(input).unwrap_err();
         assert!(

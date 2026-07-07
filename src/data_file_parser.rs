@@ -116,7 +116,7 @@ impl<'a> DataSet<'a> {
             path.segments
                 .iter()
                 .try_fold(self.root, |acc, segment| match acc {
-                    Node::Map(map) => map.get(*segment),
+                    Node::Map(map) => map.get(segment.as_str()),
                     _ => None,
                 })
         }

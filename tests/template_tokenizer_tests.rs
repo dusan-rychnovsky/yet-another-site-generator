@@ -18,6 +18,7 @@ fn tokenize_template_example_html() {
 <html lang=\"en\">
   <head>
     <title>"
+                .to_string()
         ),
         tokens[0]
     );
@@ -31,6 +32,7 @@ fn tokenize_template_example_html() {
   </head>
   <body>
     <h1>"
+                .to_string()
         ),
         tokens[2]
     );
@@ -43,6 +45,7 @@ fn tokenize_template_example_html() {
 </h1>
     <p>This is a testing page.</p>
     "
+            .to_string()
         ),
         tokens[4]
     );
@@ -55,12 +58,16 @@ fn tokenize_template_example_html() {
       <h2>Items in Backpack:</h2>
       <ul>
         "
+            .to_string()
         ),
         tokens[6]
     );
 
     assert_eq!(
-        For("item", Path::from_segments(vec!["backpack", "items"])),
+        For(
+            "item".to_string(),
+            Path::from_segments(vec!["backpack", "items"])
+        ),
         tokens[7]
     );
 
@@ -68,21 +75,23 @@ fn tokenize_template_example_html() {
         Text(
             "
           <li>"
+                .to_string()
         ),
         tokens[8]
     );
 
     assert_eq!(Var(Path::from_segments(vec!["item", "name"])), tokens[9]);
-    assert_eq!(Text(" - weight: "), tokens[10]);
+    assert_eq!(Text(" - weight: ".to_string()), tokens[10]);
     assert_eq!(Var(Path::from_segments(vec!["item", "weight"])), tokens[11]);
-    assert_eq!(Text("</li>\n        "), tokens[12]);
-    assert_eq!(EndFor("item"), tokens[13]);
+    assert_eq!(Text("</li>\n        ".to_string()), tokens[12]);
+    assert_eq!(EndFor("item".to_string()), tokens[13]);
 
     assert_eq!(
         Text(
             "
       </ul>
     "
+            .to_string()
         ),
         tokens[14]
     );
@@ -95,6 +104,7 @@ fn tokenize_template_example_html() {
   </body>
 </html>
 "
+            .to_string()
         ),
         tokens[16]
     );

@@ -17,7 +17,7 @@ fn parse_loads_and_parses_template_file() {
         assert_eq!(
             nodes[0],
             Box::new(TemplateNode::Text(
-                "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>"
+                "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>".to_string()
             ))
         );
         assert_eq!(
@@ -27,7 +27,7 @@ fn parse_loads_and_parses_template_file() {
         assert_eq!(
             nodes[2],
             Box::new(TemplateNode::Text(
-                "</title>\n  </head>\n  <body>\n    <h1>"
+                "</title>\n  </head>\n  <body>\n    <h1>".to_string()
             ))
         );
         assert_eq!(
@@ -37,7 +37,7 @@ fn parse_loads_and_parses_template_file() {
         assert_eq!(
             nodes[4],
             Box::new(TemplateNode::Text(
-                "</h1>\n    <p>This is a testing page.</p>\n    "
+                "</h1>\n    <p>This is a testing page.</p>\n    ".to_string()
             ))
         );
 
@@ -53,12 +53,13 @@ fn parse_loads_and_parses_template_file() {
                             if_nodes[0],
                             Box::new(TemplateNode::Text(
                                 "\n      <h2>Items in Backpack:</h2>\n      <ul>\n        "
+                                    .to_string()
                             ))
                         );
 
                         match if_nodes[1].as_ref() {
                             TemplateNode::ForEach(var, path, for_body) => {
-                                assert_eq!(var, &"item");
+                                assert_eq!(var, "item");
                                 assert_eq!(path.segments, vec!["backpack", "items"]);
 
                                 match for_body.as_ref() {
@@ -66,7 +67,9 @@ fn parse_loads_and_parses_template_file() {
                                         assert_eq!(for_nodes.len(), 5);
                                         assert_eq!(
                                             for_nodes[0],
-                                            Box::new(TemplateNode::Text("\n          <li>"))
+                                            Box::new(TemplateNode::Text(
+                                                "\n          <li>".to_string()
+                                            ))
                                         );
                                         assert_eq!(
                                             for_nodes[1],
@@ -76,7 +79,7 @@ fn parse_loads_and_parses_template_file() {
                                         );
                                         assert_eq!(
                                             for_nodes[2],
-                                            Box::new(TemplateNode::Text(" - weight: "))
+                                            Box::new(TemplateNode::Text(" - weight: ".to_string()))
                                         );
                                         assert_eq!(
                                             for_nodes[3],
@@ -86,7 +89,9 @@ fn parse_loads_and_parses_template_file() {
                                         );
                                         assert_eq!(
                                             for_nodes[4],
-                                            Box::new(TemplateNode::Text("</li>\n        "))
+                                            Box::new(TemplateNode::Text(
+                                                "</li>\n        ".to_string()
+                                            ))
                                         );
                                     }
                                     _ => {
@@ -101,7 +106,7 @@ fn parse_loads_and_parses_template_file() {
 
                         assert_eq!(
                             if_nodes[2],
-                            Box::new(TemplateNode::Text("\n      </ul>\n    "))
+                            Box::new(TemplateNode::Text("\n      </ul>\n    ".to_string()))
                         );
                     }
                     _ => {
@@ -116,7 +121,7 @@ fn parse_loads_and_parses_template_file() {
 
         assert_eq!(
             nodes[6],
-            Box::new(TemplateNode::Text("\n  </body>\n</html>\n"))
+            Box::new(TemplateNode::Text("\n  </body>\n</html>\n".to_string()))
         );
     } else {
         panic!("Expected template root to be a Seq node.");
