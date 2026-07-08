@@ -207,7 +207,7 @@ fn populate_data_set(
     let template_file_path =
         look_up_template_file_path(data_set, data_file_path, template_file_path)?;
     let template_tree = template_cache
-        .load_template(&template_file_path)
+        .load_template_tree(&template_file_path)
         .map_err(|e| {
             format!(
                 "Failed to populate data file. File: '{}'. {}",

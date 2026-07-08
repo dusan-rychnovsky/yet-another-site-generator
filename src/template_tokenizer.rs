@@ -1,7 +1,7 @@
 use crate::expressions::{Expr, Path};
 
 /// Represents a lexical token of a template file.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TemplateToken {
     Text(String),
     Var(Path),

@@ -23,37 +23,38 @@ fn populate_blog_exposes_pages_and_categories_placeholders_and_generates_pages()
   </head>
   <body>
     
+  
+  
+    <h2>cooking</h2>
+    <ul>
       
-      
-        <h2>cooking</h2>
-        <ul>
-          
-        </ul>
-        
-          <h3>recipes</h3>
-          <ul>
-            
-              <li><a href=\"cooking/recipes/overnight-oats.yml\">Overnight Oats</a></li>
-            
-          </ul>
-        
-      
-        <h2>finance</h2>
-        <ul>
-          
-            <li>Finance Related</li>
-          
-        </ul>
-        
-          <h3>mmm</h3>
-          <ul>
-            
-              <li><a href=\"finance/mmm/car-clowns.yml\">Car Clowns</a></li>
-            
-          </ul>
-        
-      
+    </ul>
     
+      <h3>recipes</h3>
+      <ul>
+        
+          <li><a href=\"cooking/recipes/overnight-oats.yml\">Overnight Oats</a></li>
+        
+      </ul>
+    
+  
+    <h2>finance</h2>
+    <ul>
+      
+        <li><a href=\"finance/index.yml\">Finance Related</a></li>
+      
+    </ul>
+    
+      <h3>mmm</h3>
+      <ul>
+        
+          <li><a href=\"finance/mmm/car-clowns.yml\">Car Clowns</a></li>
+        
+      </ul>
+    
+  
+
+
     <h1>Welcome to my blog!</h1>
     
       <h2>Overnight Oats</h2>
@@ -81,6 +82,39 @@ fn populate_blog_exposes_pages_and_categories_placeholders_and_generates_pages()
     <title>Overnight Oats</title>
   </head>
   <body>
+    
+  
+  
+    <h2>cooking</h2>
+    <ul>
+      
+    </ul>
+    
+      <h3>recipes</h3>
+      <ul>
+        
+          <li><a href=\"overnight-oats.yml\">Overnight Oats</a></li>
+        
+      </ul>
+    
+  
+    <h2>finance</h2>
+    <ul>
+      
+        <li><a href=\"../../finance/index.yml\">Finance Related</a></li>
+      
+    </ul>
+    
+      <h3>mmm</h3>
+      <ul>
+        
+          <li><a href=\"../../finance/mmm/car-clowns.yml\">Car Clowns</a></li>
+        
+      </ul>
+    
+  
+
+
     <h1>Overnight Oats</h1>
     
       <p>Overnight oats are a quick and easy breakfast option.</p>

@@ -1,0 +1,21 @@
+[for category in CATEGORIES]
+  [for page in category.pages]
+    <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
+  [endfor page]
+  [for subcategory in category.subcategories]
+    <h2>[subcategory.name]</h2>
+    <ul>
+      [for page in subcategory.pages]
+        <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
+      [endfor page]
+    </ul>
+    [for sub2category in subcategory.subcategories]
+      <h3>[sub2category.name]</h3>
+      <ul>
+        [for page in sub2category.pages]
+          <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
+        [endfor page]
+      </ul>
+    [endfor sub2category]
+  [endfor subcategory]
+[endfor category]
