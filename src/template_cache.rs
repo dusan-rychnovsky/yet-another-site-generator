@@ -1,5 +1,6 @@
 use crate::template_parser::{self, TemplateTree};
 use crate::template_tokenizer::{self, TemplateToken};
+use log::{debug, info};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
@@ -32,6 +33,8 @@ impl TemplateCache {
             .to_string_lossy()
             .into_owned();
         if !self.items.contains_key(&cache_key) {
+            debug!("Cache miss. Key: '{}'.", cache_key);
+            info!("Loading template file '{}'.", template_file_path);
             let file_content = fs::read_to_string(template_file_path).map_err(|e| {
                 format!(
                     "Failed to read template file content. File: '{template_file_path}'. Error: '{e}'."
@@ -46,6 +49,10 @@ impl TemplateCache {
             for token in tokens {
                 match token {
                     TemplateToken::Include(file_path) => {
+                        debug!(
+                            "Expanding INCLUDE '{}' in template '{}'.",
+                            file_path, template_file_path
+                        );
                         let file_path = Path::new(template_file_path)
                             .parent()
                             .unwrap_or_else(|| Path::new(""))
@@ -68,6 +75,8 @@ impl TemplateCache {
                     tree,
                 },
             );
+        } else {
+            debug!("Cache hit. Key: '{}'.", cache_key);
         }
         Ok(&self.items[&cache_key])
     }

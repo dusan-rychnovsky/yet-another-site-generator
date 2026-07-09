@@ -1,5 +1,6 @@
 use data_file_parser::DataSet;
 use data_file_parser::Node;
+use log::info;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -26,6 +27,7 @@ pub fn populate_all_files(
 
     let mut template_cache = TemplateCache::new();
     for (data_file_path, value) in &load_yamls(src_dir_path)? {
+        info!("Processing data file: '{:?}'.", data_file_path);
         let root = Node::from_yaml(value);
         let data_set = DataSet::from(&root);
 
@@ -41,7 +43,7 @@ pub fn populate_all_files(
         fs::create_dir_all(output_dir_path)?;
         fs::write(&output_path, populated_content)?;
 
-        println!("Generated: {:?}", output_path);
+        info!("Generated: '{:?}'.", output_path);
     }
     Ok(())
 }
@@ -69,6 +71,7 @@ pub fn populate_blog(
 
     let mut template_cache = TemplateCache::new();
     for ((data_file_path, _), page_node) in pages.iter().zip(&page_nodes) {
+        info!("Processing data file: '{:?}'.", data_file_path);
         let root = placeholders::insert_virtual_placeholders(
             page_node,
             &pages_placeholder,
@@ -88,7 +91,7 @@ pub fn populate_blog(
         fs::create_dir_all(output_dir_path)?;
         fs::write(&output_path, populated_content)?;
 
-        println!("Generated: {:?}", output_path);
+        info!("Generated: '{:?}'.", output_path);
     }
 
     Ok(())
@@ -173,6 +176,7 @@ pub fn populate_file(
     data_file_path: &str,
     template_file_path: Option<&str>,
 ) -> Result<String, Box<dyn std::error::Error>> {
+    info!("Processing  data file: '{}'.", data_file_path);
     let data_content = fs::read_to_string(data_file_path).map_err(|e| {
         format!(
             "Failed to read data file content. File: '{}'. Error: '{}'.",
