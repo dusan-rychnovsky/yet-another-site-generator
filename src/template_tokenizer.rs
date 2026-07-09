@@ -50,11 +50,11 @@ impl TemplateToken {
             return Err("Tags cannot be empty.".to_string());
         }
         let tag = match parts[0] {
-            "include" => Self::parse_include_tag(parts)?,
-            "for" => Self::parse_for_tag(parts)?,
-            "endfor" => Self::parse_endfor_tag(parts)?,
-            "if" => Self::parse_if_tag(parts)?,
-            "endif" => Self::parse_endif_tag(parts)?,
+            "INCLUDE" => Self::parse_include_tag(parts)?,
+            "FOR" => Self::parse_for_tag(parts)?,
+            "ENDFOR" => Self::parse_endfor_tag(parts)?,
+            "IF" => Self::parse_if_tag(parts)?,
+            "ENDIF" => Self::parse_endif_tag(parts)?,
             _ if input.contains('(') => Self::parse_func_tag(input.trim())?,
             _ => Self::parse_var_tag(parts)?,
         };
@@ -105,8 +105,8 @@ impl TemplateToken {
     /// Parses the given sequence of strings into a [`TemplateToken::EndIf`].
     fn parse_endif_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
-            parts[0] == "endif",
-            "Expected 'endif' tag, got: {}",
+            parts[0] == "ENDIF",
+            "Expected 'ENDIF' tag, got: {}",
             parts[0]
         );
         if parts.len() == 1 {
@@ -118,7 +118,7 @@ impl TemplateToken {
 
     /// Parses the given sequence of strings into a [`TemplateToken::If`].
     fn parse_if_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-        assert!(parts[0] == "if", "Expected 'if' tag, got: {}", parts[0]);
+        assert!(parts[0] == "IF", "Expected 'IF' tag, got: {}", parts[0]);
         let expr = Expr::parse(parts[1..].to_vec())
             .map_err(|e| format!("Invalid if tag syntax: {}", e))?;
         Ok(TemplateToken::If(expr))
@@ -126,19 +126,19 @@ impl TemplateToken {
 
     /// Parses the given sequence of strings into a [`TemplateToken::For`].
     fn parse_for_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
-        assert!(parts[0] == "for", "Expected 'for' tag, got: {}", parts[0]);
+        assert!(parts[0] == "FOR", "Expected 'FOR' tag, got: {}", parts[0]);
         if parts.len() == 4 {
-            if parts[2] == "in" {
+            if parts[2] == "IN" {
                 Ok(TemplateToken::For(
                     parts[1].to_string(),
                     Path::parse(parts[3]),
                 ))
             } else {
-                Err("Invalid for tag syntax. Missing 'in' keyword.".to_string())
+                Err("Invalid for tag syntax. Missing 'IN' keyword.".to_string())
             }
         } else {
             Err(format!(
-                "Invalid for tag syntax. Incorrect number of parts - expected 4 (for, var, in, expression), got {:?}.",
+                "Invalid for tag syntax. Incorrect number of parts - expected 4 (FOR, var, IN, expression), got {:?}.",
                 parts
             ))
         }
@@ -147,15 +147,15 @@ impl TemplateToken {
     /// Parses the given sequence of strings into a [`TemplateToken::EndFor`].
     fn parse_endfor_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
-            parts[0] == "endfor",
-            "Expected 'endfor' tag, got: {}",
+            parts[0] == "ENDFOR",
+            "Expected 'ENDFOR' tag, got: {}",
             parts[0]
         );
         if parts.len() == 2 {
             Ok(TemplateToken::EndFor(parts[1].to_string()))
         } else {
             Err(format!(
-                "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (endfor, var), got {:?}.",
+                "Invalid endfor tag syntax. Incorrect number of parts - expected 2 (ENDFOR, var), got {:?}.",
                 parts
             ))
         }
@@ -164,15 +164,15 @@ impl TemplateToken {
     /// Parses the given sequence of strings into a [`TemplateToken::Include`].
     fn parse_include_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         assert!(
-            parts[0] == "include",
-            "Expected 'include' tag, got: {}",
+            parts[0] == "INCLUDE",
+            "Expected 'INCLUDE' tag, got: {}",
             parts[0]
         );
         if parts.len() == 2 {
             Ok(TemplateToken::Include(parts[1].to_string()))
         } else {
             Err(format!(
-                "Invalid include tag syntax. Incorrect number of parts - expected 2 (include, path), got {:?}.",
+                "Invalid include tag syntax. Incorrect number of parts - expected 2 (INCLUDE, path), got {:?}.",
                 parts
             ))
         }
@@ -260,9 +260,9 @@ mod tests {
     fn tokenize_handles_for_endfor() {
         let result = tokenize(
             "\
-[ for content in section.content ]
+[ FOR content IN section.content ]
   Some text.
-[ endfor content ]",
+[ ENDFOR content ]",
         )
         .unwrap();
         assert_eq!(
@@ -281,27 +281,27 @@ mod tests {
     #[test]
     fn tokenize_fails_if_for_syntax_is_invalid() {
         let error = "Invalid for tag syntax.";
-        assert_invalid_syntax("[ for ]", error);
-        assert_invalid_syntax("[ for section in ]", error);
-        assert_invalid_syntax("[ for in section.content ]", error);
-        assert_invalid_syntax("[ for content section.content ]", error);
-        assert_invalid_syntax("[ for content : section.content ]", error);
+        assert_invalid_syntax("[ FOR ]", error);
+        assert_invalid_syntax("[ FOR section IN ]", error);
+        assert_invalid_syntax("[ FOR IN section.content ]", error);
+        assert_invalid_syntax("[ FOR content section.content ]", error);
+        assert_invalid_syntax("[ FOR content : section.content ]", error);
     }
 
     #[test]
     fn tokenize_fails_if_endfor_syntax_is_invalid() {
         let error = "Invalid endfor tag syntax.";
-        assert_invalid_syntax("[ endfor ]", error);
-        assert_invalid_syntax("[ endfor content extra ]", error);
+        assert_invalid_syntax("[ ENDFOR ]", error);
+        assert_invalid_syntax("[ ENDFOR content extra ]", error);
     }
 
     #[test]
     fn tokenize_handles_if_endif() {
         let result = tokenize(
             "\
-[ if exists section.subsections ]
+[ IF EXISTS section.subsections ]
   Some text.
-[ endif ]",
+[ ENDIF ]",
         )
         .unwrap();
         assert_eq!(
@@ -317,14 +317,14 @@ mod tests {
     #[test]
     fn tokenize_if_requires_an_expression() {
         assert_invalid_syntax(
-            "[ if ]",
+            "[ IF ]",
             "Invalid if tag syntax: Invalid expression syntax - expected a predicate and a path, got: '[]'.",
         );
     }
 
     #[test]
     fn tokenize_endif_doesnt_support_expressions() {
-        assert_invalid_syntax("[ endif expression ]", "Invalid endif tag syntax.");
+        assert_invalid_syntax("[ ENDIF expression ]", "Invalid endif tag syntax.");
     }
 
     #[test]
@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     fn tokenize_handles_include() {
-        let result = tokenize("[ include snippets/menu.html ]").unwrap();
+        let result = tokenize("[ INCLUDE snippets/menu.html ]").unwrap();
         assert_eq!(vec![Include("snippets/menu.html".to_string())], result);
     }
 

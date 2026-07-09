@@ -90,14 +90,14 @@ Create files `example-template.html` and `example-data.yml` with following conte
   <body>
     <h1>[title]</h1>
     <p>This is a testing page.</p>
-    [if exists backpack.items]
+    [IF EXISTS backpack.items]
       <h2>Items in Backpack:</h2>
       <ul>
-      [for item in backpack.items]
+      [FOR item IN backpack.items]
         <li>[item.name] - weight: [item.weight]</li>
-      [endfor item]
+      [ENDFOR item]
       </ul>
-    [endif]
+    [ENDIF]
   </body>
 </html>
 ```
@@ -176,15 +176,15 @@ The files have the following contents:
     <h1>Recept na: [title]</h1>
     <h2>Suroviny:</h2>
     <ul>
-    [for ingredient in ingredients]
+    [FOR ingredient IN ingredients]
       <li>[ingredient]</li>
-    [endfor ingredient]
+    [ENDFOR ingredient]
     </ul>
     <h2>Příprava:</h2>
     <ul>
-    [for step in instructions]
+    [FOR step IN instructions]
       <li>[step]</li>
-    [endfor step]
+    [ENDFOR step]
     </ul>
   </body>
 </html>

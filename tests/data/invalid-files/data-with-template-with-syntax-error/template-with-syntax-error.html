@@ -1,9 +1,9 @@
-[if exists crumbs]
+[IF EXISTS crumbs]
 <ul>
-  [for crumb in crumbs]
+  [FOR crumb IN crumbs]
     <li class="breadcrumb-item">
       <a href="[crumb.href]">[crumb.text]</a>
     </li>
-  [endif]
+  [ENDIF]
 </ul>
-[endfor crumb]
+[ENDFOR crumb]

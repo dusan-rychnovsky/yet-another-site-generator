@@ -48,7 +48,7 @@ impl Expr {
             ));
         }
         let predicate = match parts[0] {
-            "exists" => Predicate::Exists,
+            "EXISTS" => Predicate::Exists,
             _ => return Err(format!("Unknown predicate: '{}'.", parts[0])),
         };
         let path = Path::parse(parts[1]);
