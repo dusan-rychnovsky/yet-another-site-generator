@@ -16,32 +16,22 @@ fn parse_loads_and_parses_template_file() {
         assert_eq!(nodes.len(), 7);
         assert_eq!(
             nodes[0],
-            Box::new(TemplateNode::Text(
+            TemplateNode::Text(
                 "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title>".to_string()
-            ))
+            )
         );
-        assert_eq!(
-            nodes[1],
-            Box::new(TemplateNode::Var(Path::from_segment("title")))
-        );
+        assert_eq!(nodes[1], TemplateNode::Var(Path::from_segment("title")));
         assert_eq!(
             nodes[2],
-            Box::new(TemplateNode::Text(
-                "</title>\n  </head>\n  <body>\n    <h1>".to_string()
-            ))
+            TemplateNode::Text("</title>\n  </head>\n  <body>\n    <h1>".to_string())
         );
-        assert_eq!(
-            nodes[3],
-            Box::new(TemplateNode::Var(Path::from_segment("title")))
-        );
+        assert_eq!(nodes[3], TemplateNode::Var(Path::from_segment("title")));
         assert_eq!(
             nodes[4],
-            Box::new(TemplateNode::Text(
-                "</h1>\n    <p>This is a testing page.</p>\n    ".to_string()
-            ))
+            TemplateNode::Text("</h1>\n    <p>This is a testing page.</p>\n    ".to_string())
         );
 
-        match nodes[5].as_ref() {
+        match &nodes[5] {
             TemplateNode::If(condition, body) => {
                 assert_eq!(condition.predicate, Exists);
                 assert_eq!(condition.path.segments, vec!["backpack", "items"]);
@@ -51,13 +41,13 @@ fn parse_loads_and_parses_template_file() {
                         assert_eq!(if_nodes.len(), 3);
                         assert_eq!(
                             if_nodes[0],
-                            Box::new(TemplateNode::Text(
+                            TemplateNode::Text(
                                 "\n      <h2>Items in Backpack:</h2>\n      <ul>\n        "
                                     .to_string()
-                            ))
+                            )
                         );
 
-                        match if_nodes[1].as_ref() {
+                        match &if_nodes[1] {
                             TemplateNode::ForEach(var, path, for_body) => {
                                 assert_eq!(var, "item");
                                 assert_eq!(path.segments, vec!["backpack", "items"]);
@@ -67,31 +57,27 @@ fn parse_loads_and_parses_template_file() {
                                         assert_eq!(for_nodes.len(), 5);
                                         assert_eq!(
                                             for_nodes[0],
-                                            Box::new(TemplateNode::Text(
-                                                "\n          <li>".to_string()
-                                            ))
+                                            TemplateNode::Text("\n          <li>".to_string())
                                         );
                                         assert_eq!(
                                             for_nodes[1],
-                                            Box::new(TemplateNode::Var(Path::from_segments(vec![
+                                            TemplateNode::Var(Path::from_segments(vec![
                                                 "item", "name"
-                                            ])))
+                                            ]))
                                         );
                                         assert_eq!(
                                             for_nodes[2],
-                                            Box::new(TemplateNode::Text(" - weight: ".to_string()))
+                                            TemplateNode::Text(" - weight: ".to_string())
                                         );
                                         assert_eq!(
                                             for_nodes[3],
-                                            Box::new(TemplateNode::Var(Path::from_segments(vec![
+                                            TemplateNode::Var(Path::from_segments(vec![
                                                 "item", "weight"
-                                            ])))
+                                            ]))
                                         );
                                         assert_eq!(
                                             for_nodes[4],
-                                            Box::new(TemplateNode::Text(
-                                                "</li>\n        ".to_string()
-                                            ))
+                                            TemplateNode::Text("</li>\n        ".to_string())
                                         );
                                     }
                                     _ => {
@@ -106,7 +92,7 @@ fn parse_loads_and_parses_template_file() {
 
                         assert_eq!(
                             if_nodes[2],
-                            Box::new(TemplateNode::Text("\n      </ul>\n    ".to_string()))
+                            TemplateNode::Text("\n      </ul>\n    ".to_string())
                         );
                     }
                     _ => {
@@ -121,7 +107,7 @@ fn parse_loads_and_parses_template_file() {
 
         assert_eq!(
             nodes[6],
-            Box::new(TemplateNode::Text("\n  </body>\n</html>\n".to_string()))
+            TemplateNode::Text("\n  </body>\n</html>\n".to_string())
         );
     } else {
         panic!("Expected template root to be a Seq node.");

@@ -11,7 +11,7 @@ pub struct TemplateTree {
 /// Represents a node in a [`TemplateTree`].
 #[derive(Debug, PartialEq)]
 pub enum TemplateNode {
-    Seq(Vec<Box<TemplateNode>>),
+    Seq(Vec<TemplateNode>),
     Text(String),
     Var(Path),
     Func(String, Vec<Path>),
@@ -33,7 +33,7 @@ fn parse_nodes(
     tokens: &[TemplateToken],
     start_pos: usize,
     context: Option<&TemplateToken>,
-) -> Result<(Vec<Box<TemplateNode>>, usize), String> {
+) -> Result<(Vec<TemplateNode>, usize), String> {
     let mut nodes = Vec::new();
     let mut pos = start_pos;
     while pos < tokens.len() {
@@ -41,21 +41,21 @@ fn parse_nodes(
         pos += 1;
         match token {
             TemplateToken::Text(text) => {
-                nodes.push(Box::new(TemplateNode::Text(text.clone())));
+                nodes.push(TemplateNode::Text(text.clone()));
             }
             TemplateToken::Var(var) => {
-                nodes.push(Box::new(TemplateNode::Var(var.clone())));
+                nodes.push(TemplateNode::Var(var.clone()));
             }
             TemplateToken::Func(name, args) => {
-                nodes.push(Box::new(TemplateNode::Func(name.clone(), args.clone())));
+                nodes.push(TemplateNode::Func(name.clone(), args.clone()));
             }
             TemplateToken::For(var, expr) => {
                 let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
-                nodes.push(Box::new(TemplateNode::ForEach(
+                nodes.push(TemplateNode::ForEach(
                     var.clone(),
                     expr.clone(),
                     Box::new(TemplateNode::Seq(body)),
-                )));
+                ));
                 pos = new_start_pos;
             }
             TemplateToken::EndFor(var) => match context {
@@ -69,10 +69,10 @@ fn parse_nodes(
             },
             TemplateToken::If(cond) => {
                 let (body, new_start_pos) = parse_nodes(tokens, pos, Some(token))?;
-                nodes.push(Box::new(TemplateNode::If(
+                nodes.push(TemplateNode::If(
                     cond.clone(),
                     Box::new(TemplateNode::Seq(body)),
-                )));
+                ));
                 pos = new_start_pos;
             }
             TemplateToken::EndIf => {
@@ -109,7 +109,7 @@ mod tests {
         let text = "This is a simple text.";
         let tokens = vec![TemplateToken::Text(text.to_string())];
         let result = parse(&tokens).unwrap();
-        assert_eq!(result.root, Seq(vec![Box::new(Text(text.to_string()))]));
+        assert_eq!(result.root, Seq(vec![Text(text.to_string())]));
     }
 
     #[test]
@@ -125,11 +125,11 @@ mod tests {
         assert_eq!(
             result.root,
             Seq(vec![
-                Box::new(Text("Hello, ".to_string())),
-                Box::new(Var(Path::from_segment("name"))),
-                Box::new(Text("! Welcome to ".to_string())),
-                Box::new(Var(Path::from_segments(vec!["place", "address"]))),
-                Box::new(Text(".".to_string()))
+                Text("Hello, ".to_string()),
+                Var(Path::from_segment("name")),
+                Text("! Welcome to ".to_string()),
+                Var(Path::from_segments(vec!["place", "address"])),
+                Text(".".to_string())
             ])
         );
     }
@@ -151,15 +151,15 @@ mod tests {
         assert_eq!(
             result.root,
             Seq(vec![
-                Box::new(Text("<a href=\"".to_string())),
-                Box::new(Func(
+                Text("<a href=\"".to_string()),
+                Func(
                     "LINK".to_string(),
                     vec![
                         Path::from_segment("PATH"),
                         Path::from_segments(vec!["page", "PATH"]),
                     ]
-                )),
-                Box::new(Text("\">".to_string())),
+                ),
+                Text("\">".to_string()),
             ])
         );
     }
@@ -176,15 +176,15 @@ mod tests {
         let result = parse(&tokens).unwrap();
         assert_eq!(
             result.root,
-            Seq(vec![Box::new(ForEach(
+            Seq(vec![ForEach(
                 "section".to_string(),
                 Path::from_segment("sections"),
                 Box::new(Seq(vec![
-                    Box::new(Text("\n  Section. Title: ".to_string())),
-                    Box::new(Var(Path::from_segments(vec!["section", "title"]))),
-                    Box::new(Text("\n".to_string()))
+                    Text("\n  Section. Title: ".to_string()),
+                    Var(Path::from_segments(vec!["section", "title"])),
+                    Text("\n".to_string())
                 ]))
-            ))])
+            )])
         );
     }
 
@@ -207,23 +207,23 @@ mod tests {
         let result = parse(&tokens).unwrap();
         assert_eq!(
             result.root,
-            Seq(vec![Box::new(ForEach(
+            Seq(vec![ForEach(
                 "section".to_string(),
                 Path::from_segment("sections"),
                 Box::new(Seq(vec![
-                    Box::new(Text("\n  <ul>\n    ".to_string())),
-                    Box::new(ForEach(
+                    Text("\n  <ul>\n    ".to_string()),
+                    ForEach(
                         "link".to_string(),
                         Path::from_segments(vec!["section", "links"]),
                         Box::new(Seq(vec![
-                            Box::new(Text("\n      <li>\n        Link: ".to_string())),
-                            Box::new(Var(Path::from_segments(vec!["link", "href"]))),
-                            Box::new(Text("\n      </li>\n    ".to_string()))
+                            Text("\n      <li>\n        Link: ".to_string()),
+                            Var(Path::from_segments(vec!["link", "href"])),
+                            Text("\n      </li>\n    ".to_string())
                         ]))
-                    )),
-                    Box::new(Text("\n  </ul>\n".to_string()))
+                    ),
+                    Text("\n  </ul>\n".to_string())
                 ]))
-            ))])
+            )])
         );
     }
 
@@ -266,12 +266,10 @@ mod tests {
         let result = parse(&tokens).unwrap();
         assert_eq!(
             result.root,
-            Seq(vec![Box::new(If(
+            Seq(vec![If(
                 Expr::from(Exists, vec!["section", "subsections"]),
-                Box::new(Seq(vec![Box::new(Text(
-                    "\n  Subsections exist.\n".to_string()
-                ))]))
-            ))])
+                Box::new(Seq(vec![Text("\n  Subsections exist.\n".to_string())]))
+            )])
         );
     }
 
@@ -294,22 +292,22 @@ mod tests {
         let result = parse(&tokens).unwrap();
         assert_eq!(
             result.root,
-            Seq(vec![Box::new(If(
+            Seq(vec![If(
                 Expr::from(Exists, vec!["section", "subsections"]),
                 Box::new(Seq(vec![
-                    Box::new(Text("\n  <ul>\n    ".to_string())),
-                    Box::new(ForEach(
+                    Text("\n  <ul>\n    ".to_string()),
+                    ForEach(
                         "subsection".to_string(),
                         Path::from_segments(vec!["section", "subsections"]),
                         Box::new(Seq(vec![
-                            Box::new(Text("\n      <li>Subsection: ".to_string())),
-                            Box::new(Var(Path::from_segments(vec!["subsection", "title"]))),
-                            Box::new(Text("</li>\n    ".to_string()))
+                            Text("\n      <li>Subsection: ".to_string()),
+                            Var(Path::from_segments(vec!["subsection", "title"])),
+                            Text("</li>\n    ".to_string())
                         ]))
-                    )),
-                    Box::new(Text("\n  </ul>\n".to_string()))
+                    ),
+                    Text("\n  </ul>\n".to_string())
                 ]))
-            ))])
+            )])
         );
     }
 

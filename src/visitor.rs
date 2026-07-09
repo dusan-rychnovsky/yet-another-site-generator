@@ -167,9 +167,9 @@ mod tests {
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("Hello, ".to_string())),
-                Box::new(Var(Path::from_segment("name"))),
-                Box::new(Text("!".to_string())),
+                Text("Hello, ".to_string()),
+                Var(Path::from_segment("name")),
+                Text("!".to_string()),
             ]),
         };
         let result = unwrap(visit(&tree, &data_set));
@@ -266,9 +266,9 @@ mod tests {
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("Hello, ".to_string())),
-                Box::new(Var(Path::from_segment("name"))),
-                Box::new(Text("!".to_string())),
+                Text("Hello, ".to_string()),
+                Var(Path::from_segment("name")),
+                Text("!".to_string()),
             ]),
         };
         let err = visit(&tree, &data_set).unwrap_err();
@@ -298,9 +298,9 @@ mod tests {
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("Hello, ".to_string())),
-                Box::new(Var(Path::from_segment("name"))),
-                Box::new(Text("!".to_string())),
+                Text("Hello, ".to_string()),
+                Var(Path::from_segment("name")),
+                Text("!".to_string()),
             ]),
         };
         let err = visit(&tree, &data_set).unwrap_err();
@@ -324,9 +324,9 @@ mod tests {
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("Section title: ".to_string())),
-                Box::new(Var(Path::from_segments(vec!["section", "title"]))),
-                Box::new(Text(".".to_string())),
+                Text("Section title: ".to_string()),
+                Var(Path::from_segments(vec!["section", "title"])),
+                Text(".".to_string()),
             ]),
         };
         let result = unwrap(visit(&tree, &data_set));
@@ -354,15 +354,15 @@ mod tests {
         let root = Node::from_yaml(&data);
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
-            root: Seq(vec![Box::new(ForEach(
+            root: Seq(vec![ForEach(
                 "link".to_string(),
                 Path::from_segments(vec!["section", "links"]),
                 Box::new(Seq(vec![
-                    Box::new(Text("- link: ".to_string())),
-                    Box::new(Var(Path::from_segments(vec!["link", "href"]))),
-                    Box::new(Text("\n".to_string())),
+                    Text("- link: ".to_string()),
+                    Var(Path::from_segments(vec!["link", "href"])),
+                    Text("\n".to_string()),
                 ])),
-            ))]),
+            )]),
         };
         let result = unwrap(visit(&tree, &data_set));
         assert_eq!(
@@ -399,18 +399,18 @@ mod tests {
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("Categories:\n".to_string())),
-                Box::new(ForEach(
+                Text("Categories:\n".to_string()),
+                ForEach(
                     "subcategory".to_string(),
                     Path::from_segments(vec!["subcategories"]),
                     Box::new(Seq(vec![
-                        Box::new(Text("- ".to_string())),
-                        Box::new(Var(Path::from_segments(vec!["category"]))),
-                        Box::new(Text(": ".to_string())),
-                        Box::new(Var(Path::from_segments(vec!["subcategory", "title"]))),
-                        Box::new(Text("\n".to_string())),
+                        Text("- ".to_string()),
+                        Var(Path::from_segments(vec!["category"])),
+                        Text(": ".to_string()),
+                        Var(Path::from_segments(vec!["subcategory", "title"])),
+                        Text("\n".to_string()),
                     ])),
-                )),
+                ),
             ]),
         };
         let result = unwrap(visit(&tree, &data_set));
@@ -439,9 +439,9 @@ Categories:
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
                 Box::new(Seq(vec![
-                    Box::new(Text("We have ".to_string())),
-                    Box::new(Var(Path::from_segments(vec!["items", "amount"]))),
-                    Box::new(Text(" items left.".to_string())),
+                    Text("We have ".to_string()),
+                    Var(Path::from_segments(vec!["items", "amount"])),
+                    Text(" items left.".to_string()),
                 ])),
             ),
         };
@@ -464,9 +464,9 @@ Categories:
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
                 Box::new(Seq(vec![
-                    Box::new(Text("We have ".to_string())),
-                    Box::new(Var(Path::from_segments(vec!["items", "amount"]))),
-                    Box::new(Text(" items left.".to_string())),
+                    Text("We have ".to_string()),
+                    Var(Path::from_segments(vec!["items", "amount"])),
+                    Text(" items left.".to_string()),
                 ])),
             ),
         };
@@ -498,16 +498,16 @@ Categories:
             root: If(
                 Expr::from(Exists, vec!["section", "subsections"]),
                 Box::new(Seq(vec![
-                    Box::new(Text("Subsections:\n".to_string())),
-                    Box::new(ForEach(
+                    Text("Subsections:\n".to_string()),
+                    ForEach(
                         "subsection".to_string(),
                         Path::from_segments(vec!["section", "subsections"]),
                         Box::new(Seq(vec![
-                            Box::new(Text("- ".to_string())),
-                            Box::new(Var(Path::from_segments(vec!["subsection", "title"]))),
-                            Box::new(Text("\n".to_string())),
+                            Text("- ".to_string()),
+                            Var(Path::from_segments(vec!["subsection", "title"])),
+                            Text("\n".to_string()),
                         ])),
-                    )),
+                    ),
                 ])),
             ),
         };
@@ -537,9 +537,9 @@ majitelem Dobré čajovny na Václavském náměstí v Praze."
         let data_set = DataSet::from(&root);
         let tree = TemplateTree {
             root: Seq(vec![
-                Box::new(Text("<p>".to_string())),
-                Box::new(Var(Path::from_segment("text"))),
-                Box::new(Text("</p>".to_string())),
+                Text("<p>".to_string()),
+                Var(Path::from_segment("text")),
+                Text("</p>".to_string()),
             ]),
         };
         let result = unwrap(visit(&tree, &data_set));
