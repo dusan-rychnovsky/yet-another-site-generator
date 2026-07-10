@@ -1,5 +1,4 @@
 use crate::data_file_parser::Node;
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
@@ -7,7 +6,7 @@ use std::collections::HashMap;
 /// [`Node`].
 #[derive(Default)]
 struct CategoryBuilder<'a> {
-    pages: Vec<Node<'a>>,
+    pages: Vec<Node>,
     subcategories: BTreeMap<&'a str, CategoryBuilder<'a>>,
 }
 
@@ -15,8 +14,8 @@ struct CategoryBuilder<'a> {
 /// on the `categories` chain declared in each page. Returns the tree as a [`Node::Seq`] of category
 /// nodes, where each category node is a [`Node::Map`] exposing `name`, `pages` and `subcategories`.
 /// Pages without a `categories` chain are not included in the tree.
-pub fn build<'a>(page_nodes: &[Node<'a>]) -> Node<'a> {
-    let mut roots: BTreeMap<&'a str, CategoryBuilder<'a>> = BTreeMap::new();
+pub fn build(page_nodes: &[Node]) -> Node {
+    let mut roots: BTreeMap<&str, CategoryBuilder> = BTreeMap::new();
     for page in page_nodes {
         if let Some(chain) = get_category_chain(page) {
             insert_page(&mut roots, &chain, page);
@@ -26,7 +25,7 @@ pub fn build<'a>(page_nodes: &[Node<'a>]) -> Node<'a> {
 }
 
 /// Extracts the `categories` chain from the given page node, if it is present and non-empty.
-fn get_category_chain<'a>(page: &Node<'a>) -> Option<Vec<&'a str>> {
+fn get_category_chain(page: &Node) -> Option<Vec<&str>> {
     let categories = match page {
         Node::Map(map) => map.get("categories")?,
         _ => return None,
@@ -35,10 +34,10 @@ fn get_category_chain<'a>(page: &Node<'a>) -> Option<Vec<&'a str>> {
         Node::Seq(seq) => seq,
         _ => return None,
     };
-    let chain: Vec<&'a str> = segments
+    let chain: Vec<&str> = segments
         .iter()
         .filter_map(|segment| match segment {
-            Node::Str(Cow::Borrowed(name)) => Some(*name),
+            Node::Str(name) => Some(name.as_str()),
             _ => None,
         })
         .collect();
@@ -50,7 +49,7 @@ fn get_category_chain<'a>(page: &Node<'a>) -> Option<Vec<&'a str>> {
 fn insert_page<'a>(
     categories: &mut BTreeMap<&'a str, CategoryBuilder<'a>>,
     chain: &[&'a str],
-    page: &Node<'a>,
+    page: &Node,
 ) {
     let category = categories.entry(chain[0]).or_default();
     let rest = &chain[1..];
@@ -62,7 +61,7 @@ fn insert_page<'a>(
 }
 
 /// Converts a map of named [`CategoryBuilder`]s into a [`Node::Seq`] of category nodes.
-fn categories_to_node<'a>(categories: BTreeMap<&'a str, CategoryBuilder<'a>>) -> Node<'a> {
+fn categories_to_node(categories: BTreeMap<&str, CategoryBuilder<'_>>) -> Node {
     Node::Seq(
         categories
             .into_iter()
@@ -73,11 +72,14 @@ fn categories_to_node<'a>(categories: BTreeMap<&'a str, CategoryBuilder<'a>>) ->
 
 /// Converts a single named [`CategoryBuilder`] into a [`Node::Map`] exposing `name`, `pages` and
 /// `subcategories`.
-fn category_to_node<'a>(name: &'a str, category: CategoryBuilder<'a>) -> Node<'a> {
+fn category_to_node(name: &str, category: CategoryBuilder<'_>) -> Node {
     let mut map = HashMap::new();
-    map.insert("name", Node::Str(Cow::Borrowed(name)));
-    map.insert("pages", Node::Seq(category.pages));
-    map.insert("subcategories", categories_to_node(category.subcategories));
+    map.insert("name".to_string(), Node::Str(name.to_string()));
+    map.insert("pages".to_string(), Node::Seq(category.pages));
+    map.insert(
+        "subcategories".to_string(),
+        categories_to_node(category.subcategories),
+    );
     Node::Map(map)
 }
 
@@ -93,7 +95,7 @@ mod tests {
             .collect()
     }
 
-    fn child<'a>(node: &'a Node<'a>, key: &str) -> &'a Node<'a> {
+    fn child<'a>(node: &'a Node, key: &str) -> &'a Node {
         match node {
             Node::Map(map) => map
                 .get(key)
@@ -102,22 +104,22 @@ mod tests {
         }
     }
 
-    fn seq<'a>(node: &'a Node<'a>) -> &'a [Node<'a>] {
+    fn seq(node: &Node) -> &[Node] {
         match node {
             Node::Seq(items) => items,
             other => panic!("expected a sequence, got {other:?}"),
         }
     }
 
-    fn text<'a>(node: &'a Node<'a>) -> &'a str {
+    fn text(node: &Node) -> &str {
         match node {
-            Node::Str(value) => value.as_ref(),
+            Node::Str(value) => value.as_str(),
             other => panic!("expected a string, got {other:?}"),
         }
     }
 
     /// Names of the categories in the given `CATEGORIES`/`subcategories` sequence, in order.
-    fn category_names<'a>(categories: &'a Node<'a>) -> Vec<&'a str> {
+    fn category_names(categories: &Node) -> Vec<&str> {
         seq(categories)
             .iter()
             .map(|category| text(child(category, "name")))
@@ -125,7 +127,7 @@ mod tests {
     }
 
     /// Titles of the pages directly assigned to the given category, in order.
-    fn page_titles<'a>(category: &'a Node<'a>) -> Vec<&'a str> {
+    fn page_titles(category: &Node) -> Vec<&str> {
         seq(child(category, "pages"))
             .iter()
             .map(|page| text(child(page, "title")))

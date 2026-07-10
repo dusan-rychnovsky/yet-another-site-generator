@@ -1,15 +1,14 @@
 use crate::data_file_parser::Node;
-use std::borrow::Cow;
 use std::path::Path;
 
 /// Embeds the `PATH` placeholder — the filesystem path of the page's data file — into the given
 /// page node.
-pub fn embed<'a>(page: Node<'a>, path: &Path) -> Node<'a> {
+pub fn embed(page: Node, path: &Path) -> Node {
     match page {
         Node::Map(mut map) => {
             map.insert(
-                "PATH",
-                Node::Str(Cow::Owned(path.to_string_lossy().into_owned())),
+                "PATH".to_string(),
+                Node::Str(path.to_string_lossy().into_owned()),
             );
             Node::Map(map)
         }
@@ -29,7 +28,7 @@ mod tests {
 
         match embedded {
             Node::Map(map) => match map.get("PATH") {
-                Some(Node::Str(path)) => assert_eq!(path.as_ref(), "blog/index.yml"),
+                Some(Node::Str(path)) => assert_eq!(path.as_str(), "blog/index.yml"),
                 other => panic!("expected a PATH string, got {other:?}"),
             },
             other => panic!("expected a map, got {other:?}"),

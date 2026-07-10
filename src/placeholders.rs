@@ -7,17 +7,13 @@ pub mod path;
 
 /// Returns a copy of the given page node with the root-level virtual placeholders inserted:
 /// `PAGES` (see [`pages::build`]) and `CATEGORIES` (see [`categories::build`]).
-pub fn insert_virtual_placeholders<'a>(
-    page: &Node<'a>,
-    pages: &Node<'a>,
-    categories: &Node<'a>,
-) -> Node<'a> {
+pub fn insert_virtual_placeholders(page: &Node, pages: &Node, categories: &Node) -> Node {
     let mut root_map = match page {
         Node::Map(map) => map.clone(),
         _ => HashMap::new(),
     };
-    root_map.insert("PAGES", pages.clone());
-    root_map.insert("CATEGORIES", categories.clone());
+    root_map.insert("PAGES".to_string(), pages.clone());
+    root_map.insert("CATEGORIES".to_string(), categories.clone());
     Node::Map(root_map)
 }
 
@@ -26,10 +22,10 @@ mod tests {
     use super::*;
 
     /// Returns the keys of the given map node, sorted for stable comparison.
-    fn keys<'a>(node: &'a Node<'a>) -> Vec<&'a str> {
+    fn keys(node: &Node) -> Vec<&str> {
         match node {
             Node::Map(map) => {
-                let mut keys: Vec<&str> = map.keys().copied().collect();
+                let mut keys: Vec<&str> = map.keys().map(String::as_str).collect();
                 keys.sort();
                 keys
             }

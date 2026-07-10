@@ -1,16 +1,15 @@
 use crate::expressions::Path;
-use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// Represents a node in the data tree.
 #[derive(Debug, Clone)]
-pub enum Node<'a> {
+pub enum Node {
     /// A scalar string value.
-    Str(Cow<'a, str>),
+    Str(String),
     /// An ordered sequence of nodes.
-    Seq(Vec<Node<'a>>),
+    Seq(Vec<Node>),
     /// A mapping of keys to nodes.
-    Map(HashMap<&'a str, Node<'a>>),
+    Map(HashMap<String, Node>),
     /// A value that is present but is not a string (e.g. number, bool, null).
     Other,
 }
@@ -23,7 +22,7 @@ pub struct DataSet<'a> {
     /// such as within foreach loops. Otherwise, it is an empty string.
     pub context: &'a str,
     /// Root node of the data tree.
-    pub root: &'a Node<'a>,
+    pub root: &'a Node,
 }
 
 /// Parses the given yaml content into a yaml tree, which can then be converted into a [`Node`] tree using [`Node::from_yaml`].
@@ -31,17 +30,17 @@ pub fn parse(input: &str) -> Result<serde_yaml::Value, serde_yaml::Error> {
     serde_yaml::from_str(input)
 }
 
-impl<'a> Node<'a> {
-    /// Converts a borrowed yaml value into a [`Node`], borrowing strings from the source tree.
-    pub fn from_yaml(value: &'a serde_yaml::Value) -> Self {
+impl Node {
+    /// Converts a borrowed yaml value into a [`Node`].
+    pub fn from_yaml(value: &serde_yaml::Value) -> Self {
         match value {
-            serde_yaml::Value::String(s) => Node::Str(Cow::Borrowed(s)),
+            serde_yaml::Value::String(s) => Node::Str(s.clone()),
             serde_yaml::Value::Sequence(seq) => {
                 Node::Seq(seq.iter().map(Node::from_yaml).collect())
             }
             serde_yaml::Value::Mapping(map) => Node::Map(
                 map.iter()
-                    .filter_map(|(k, v)| k.as_str().map(|k| (k, Node::from_yaml(v))))
+                    .filter_map(|(k, v)| k.as_str().map(|k| (k.to_string(), Node::from_yaml(v))))
                     .collect(),
             ),
             _ => Node::Other,
@@ -51,7 +50,7 @@ impl<'a> Node<'a> {
 
 impl<'a> DataSet<'a> {
     /// Creates a new [`DataSet`] with empty [`DataSet::context`].
-    pub fn from(root: &'a Node<'a>) -> Self {
+    pub fn from(root: &'a Node) -> Self {
         DataSet { context: "", root }
     }
 
@@ -61,7 +60,7 @@ impl<'a> DataSet<'a> {
     pub fn get_str(&self, path: &Path) -> Result<Option<&str>, String> {
         let value = Self::locate(self, path);
         match value {
-            Some(Node::Str(value)) => Ok(Some(value.as_ref())),
+            Some(Node::Str(value)) => Ok(Some(value.as_str())),
             Some(_) => Err(format!(
                 "Path [{}] does not reference a string in data file.",
                 path.segments.join(".")
@@ -97,7 +96,7 @@ impl<'a> DataSet<'a> {
     }
 
     /// Locates a node in the represented tree by the given path.
-    fn locate(&self, path: &Path) -> Option<&'a Node<'a>> {
+    fn locate(&self, path: &Path) -> Option<&'a Node> {
         // offset path by dataset context, if exists
         if !self.context.is_empty() {
             if !path.segments.is_empty() && self.context == path.segments[0] {
