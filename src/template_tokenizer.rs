@@ -67,17 +67,17 @@ impl TemplateToken {
     fn parse_func_tag(input: &str) -> Result<TemplateToken, String> {
         let open = input
             .find('(')
-            .ok_or_else(|| format!("Invalid function syntax - missing '(': '{}'.", input))?;
+            .ok_or_else(|| format!("Invalid function syntax. Missing '(': '{}'.", input))?;
         if !input.ends_with(')') {
             return Err(format!(
-                "Invalid function syntax - missing closing ')': '{}'.",
+                "Invalid function syntax. Missing closing ')': '{}'.",
                 input
             ));
         }
         let name = input[..open].trim();
         if name.is_empty() {
             return Err(format!(
-                "Invalid function syntax - missing function name: '{}'.",
+                "Invalid function syntax. Missing function name: '{}'.",
                 input
             ));
         }
@@ -94,11 +94,14 @@ impl TemplateToken {
     }
 
     /// Parses the given sequence of strings into a [`TemplateToken::Var`].
-    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, &str> {
+    fn parse_var_tag(parts: Vec<&str>) -> Result<TemplateToken, String> {
         if parts.len() == 1 {
             Ok(TemplateToken::Var(Path::parse(parts[0])))
         } else {
-            Err("Invalid var syntax - no parameters expected.")
+            Err(format!(
+                "Invalid var syntax. No parameters expected. Parts: {:?}",
+                parts
+            ))
         }
     }
 
@@ -112,7 +115,10 @@ impl TemplateToken {
         if parts.len() == 1 {
             Ok(TemplateToken::EndIf)
         } else {
-            Err("Invalid endif tag syntax. No parameters expected.".to_string())
+            Err(format!(
+                "Invalid endif tag syntax. No parameters expected. Parts: {:?}",
+                parts
+            ))
         }
     }
 
@@ -229,12 +235,12 @@ mod tests {
 
     #[test]
     fn tokenize_fails_if_func_has_no_closing_paren() {
-        assert_invalid_syntax("[LINK(PATH, page.PATH]", "missing closing ')'");
+        assert_invalid_syntax("[LINK(PATH, page.PATH]", "Missing closing ')'");
     }
 
     #[test]
     fn tokenize_fails_if_func_has_no_name() {
-        assert_invalid_syntax("[(PATH, page.PATH)]", "missing function name");
+        assert_invalid_syntax("[(PATH, page.PATH)]", "Missing function name");
     }
 
     #[test]
