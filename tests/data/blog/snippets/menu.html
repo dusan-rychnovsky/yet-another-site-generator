@@ -1,21 +1,27 @@
+<ul>
 [FOR category IN CATEGORIES]
   [FOR page IN category.pages]
     <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
   [ENDFOR page]
   [FOR subcategory IN category.subcategories]
-    <h2>[subcategory.name]</h2>
-    <ul>
+    <li>
+      <span>[subcategory.name]</span>
+      <ul>
       [FOR page IN subcategory.pages]
         <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
       [ENDFOR page]
-    </ul>
-    [FOR sub2category IN subcategory.subcategories]
-      <h3>[sub2category.name]</h3>
-      <ul>
-        [FOR page IN sub2category.pages]
-          <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
-        [ENDFOR page]
+      [FOR sub2category IN subcategory.subcategories]
+        <li>
+          <span>[sub2category.name]</span>
+          <ul>
+            [FOR page IN sub2category.pages]
+              <li><a href="[LINK(PATH, page.PATH)]">[page.title]</a></li>
+            [ENDFOR page]
+          </ul>
+        </li>
+      [ENDFOR sub2category]
       </ul>
-    [ENDFOR sub2category]
+    </li>
   [ENDFOR subcategory]
 [ENDFOR category]
+</ul>
