@@ -22,11 +22,11 @@ pub fn populate_file(
 ) -> Result<String, Box<dyn std::error::Error>> {
     info!("Processing  data file: '{}'.", data_file_path);
 
+    let data_set_tree = load_data_set_tree(data_file_path)?;
+    let data_set = DataSet::from(&data_set_tree);
+
     let mut template_cache = TemplateCache::new();
     let populated_content = (|| {
-        let data_set_tree = load_data_set_tree(data_file_path)?;
-        let data_set = DataSet::from(&data_set_tree);
-
         let template_tree = template_cache.load_template_tree(&template_file_path)?;
         visitor::visit(template_tree, &data_set)
     })()
@@ -51,23 +51,33 @@ pub fn populate_all_files(
     check_dir_exists(dst_dir_path)?;
 
     let mut template_cache = TemplateCache::new();
-    for (data_file_path, data_set_root) in &load_data_set_trees(src_dir_path)? {
-        info!("Processing data file: '{:?}'.", data_file_path);
-        let data_set = DataSet::from(data_set_root);
+    for (data_file_path, data_set_tree) in &load_data_set_trees(src_dir_path)? {
+        info!("Processing data file: '{}'.", data_file_path.display());
+        let data_set = DataSet::from(data_set_tree);
 
-        let populated_content = populate_data_set(
-            &data_set,
-            data_file_path.to_str().unwrap(),
-            None,
-            &mut template_cache,
-        )?;
-        let (output_path, output_dir_path) =
-            construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+        (|| -> Result<(), Box<dyn std::error::Error>> {
+            let template_file_path =
+                look_up_template_file_path(&data_set, data_file_path.to_str().unwrap())?;
+            let template_tree = template_cache.load_template_tree(&template_file_path)?;
 
-        fs::create_dir_all(output_dir_path)?;
-        fs::write(&output_path, populated_content)?;
+            let populated_content = visitor::visit(template_tree, &data_set)?;
 
-        info!("Generated: '{:?}'.", output_path);
+            let (output_path, output_dir_path) =
+                construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+
+            fs::create_dir_all(output_dir_path)?;
+            fs::write(&output_path, populated_content)?;
+
+            info!("Generated: '{}'.", output_path.display());
+            Ok(())
+        })()
+        .map_err(|e| {
+            format!(
+                "Failed to populate data file. File: '{}'. Error: '{}'.",
+                data_file_path.display(),
+                e
+            )
+        })?;
     }
     Ok(())
 }
@@ -98,7 +108,7 @@ pub fn populate_blog(
 
     let mut template_cache = TemplateCache::new();
     for (data_file_path, page_node) in data_file_paths.iter().zip(&page_nodes) {
-        info!("Processing data file: '{:?}'.", data_file_path);
+        info!("Processing data file: '{}'.", data_file_path.display());
         let root = placeholders::insert_virtual_placeholders(
             page_node,
             &pages_placeholder,
@@ -106,21 +116,30 @@ pub fn populate_blog(
         );
         let data_set = DataSet::from(&root);
 
-        let populated_content = populate_data_set(
-            &data_set,
-            data_file_path.to_str().unwrap(),
-            None,
-            &mut template_cache,
-        )?;
-        let (output_path, output_dir_path) =
-            construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+        (|| -> Result<(), Box<dyn std::error::Error>> {
+            let template_file_path =
+                look_up_template_file_path(&data_set, data_file_path.to_str().unwrap())?;
+            let template_tree = template_cache.load_template_tree(&template_file_path)?;
 
-        fs::create_dir_all(output_dir_path)?;
-        fs::write(&output_path, populated_content)?;
+            let populated_content = visitor::visit(template_tree, &data_set)?;
 
-        info!("Generated: '{:?}'.", output_path);
+            let (output_path, output_dir_path) =
+                construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+
+            fs::create_dir_all(output_dir_path)?;
+            fs::write(&output_path, populated_content)?;
+
+            info!("Generated: '{}'.", output_path.display());
+            Ok(())
+        })()
+        .map_err(|e| {
+            format!(
+                "Failed to populate data file. File: '{}'. Error: '{}'.",
+                data_file_path.display(),
+                e
+            )
+        })?;
     }
-
     Ok(())
 }
 
@@ -201,62 +220,19 @@ fn construct_output_path(
     Ok((output_path, output_dir_path))
 }
 
-/// Populates the template linked to the given data set and returns the populated content.
-/// The template is looked up via [`look_up_template_file_path`].
-fn populate_data_set(
-    data_set: &DataSet,
-    data_file_path: &str,
-    template_file_path: Option<&str>,
-    template_cache: &mut TemplateCache,
-) -> Result<String, Box<dyn std::error::Error>> {
-    let template_file_path =
-        look_up_template_file_path(data_set, data_file_path, template_file_path)?;
-    let template_tree = template_cache
-        .load_template_tree(&template_file_path)
+fn look_up_template_file_path(data_set: &DataSet, data_file_path: &str) -> Result<String, String> {
+    let template_file_path = data_set
+        .get_str(&expressions::Path::from_segment("template"))
+        .and_then(|v| v.ok_or_else(|| "Path [template] is not defined in data file.".to_string()))
         .map_err(|e| {
             format!(
-                "Failed to populate data file. File: '{}'. {}",
+                "Failed to parse data file content. File: '{}'. Error: '{}'.",
                 data_file_path, e
             )
         })?;
-
-    let result = visitor::visit(template_tree, data_set).map_err(|e| {
-        format!(
-            "Failed to populate data file. File: '{}'. Error: '{}'.",
-            data_file_path, e
-        )
-    })?;
-
-    Ok(result)
-}
-
-/// Resolves the template file to be used with the given data file.
-/// If a template file path is explicitly provided, it will be used. Otherwise,
-/// the path is looked up from the `template` field in the given data set.
-fn look_up_template_file_path(
-    data_set: &DataSet,
-    data_file_path: &str,
-    template_file_path: Option<&str>,
-) -> Result<String, String> {
-    let template_file_path = if let Some(template_file_path) = template_file_path {
-        template_file_path.to_string()
-    } else {
-        let template_file_path = data_set
-            .get_str(&expressions::Path::from_segment("template"))
-            .and_then(|v| {
-                v.ok_or_else(|| "Path [template] is not defined in data file.".to_string())
-            })
-            .map_err(|e| {
-                format!(
-                    "Failed to parse data file content. File: '{}'. Error: '{}'.",
-                    data_file_path, e
-                )
-            })?;
-        let parent_path = Path::new(data_file_path).parent().unwrap();
-        parent_path
-            .join(template_file_path)
-            .to_string_lossy()
-            .to_string()
-    };
-    Ok(template_file_path)
+    let parent_path = Path::new(data_file_path).parent().unwrap();
+    Ok(parent_path
+        .join(template_file_path)
+        .to_string_lossy()
+        .to_string())
 }

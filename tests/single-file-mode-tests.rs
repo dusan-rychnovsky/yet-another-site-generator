@@ -53,7 +53,7 @@ fn populate_file_fails_if_given_a_directory_instead_of_data_file() {
     assert_populate_file_fails_with_error(
         "tests/data/recipes",
         "tests/data/recipes/template.html",
-        "Failed to populate data file. File: 'tests/data/recipes'. Error: 'Failed to read data file content. File: 'tests/data/recipes'. Error: ",
+        "Failed to read data file content. File: 'tests/data/recipes'. Error: ",
     );
 }
 
@@ -62,7 +62,7 @@ fn populate_file_fails_if_data_file_does_not_exist() {
     assert_populate_file_fails_with_error(
         "tests/data/recipes/non-existing-file.yml",
         "tests/data/recipes/template.html",
-        "Failed to populate data file. File: 'tests/data/recipes/non-existing-file.yml'. Error: 'Failed to read data file content. File: 'tests/data/recipes/non-existing-file.yml'. Error: ",
+        "Failed to read data file content. File: 'tests/data/recipes/non-existing-file.yml'. Error: ",
     );
 }
 
@@ -71,7 +71,7 @@ fn populate_file_fails_if_data_file_is_not_a_valid_yaml() {
     assert_populate_file_fails_with_error(
         "tests/data/invalid-files/data-with-syntax-error/invalid-data.yml",
         "tests/data/recipes/template.html",
-        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: 'Failed to parse data file content. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: ",
+        "Failed to parse data file content. File: 'tests/data/invalid-files/data-with-syntax-error/invalid-data.yml'. Error: ",
     );
 }
 

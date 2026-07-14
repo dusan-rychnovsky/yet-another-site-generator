@@ -157,7 +157,7 @@ fn populate_all_files_fails_if_data_file_does_not_have_template_path() {
     assert_populate_all_files_fails_with_error(
         "tests/data/invalid-files/data-without-template/",
         temp_dir.path().to_str().unwrap(),
-        "Failed to parse data file content. File: 'tests/data/invalid-files/data-without-template/invalid-data.yml'. Error: 'Path [template] is not defined in data file.'",
+        "Failed to populate data file. File: 'tests/data/invalid-files/data-without-template/invalid-data.yml'. Error: 'Failed to parse data file content. File: 'tests/data/invalid-files/data-without-template/invalid-data.yml'. Error: 'Path [template] is not defined in data file.'.'.",
     );
 }
 
@@ -167,7 +167,7 @@ fn populate_all_files_fails_if_template_file_does_not_exist() {
     assert_populate_all_files_fails_with_error(
         "tests/data/invalid-files/data-with-non-existing-template/",
         temp_dir.path().to_str().unwrap(),
-        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Failed to read template file content. File: 'tests/data/invalid-files/",
+        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-non-existing-template/invalid-data.yml'. Error: 'Failed to read template file content. File: 'tests/data/invalid-files/",
     );
 }
 
@@ -187,7 +187,7 @@ fn populate_all_files_fails_if_template_file_has_lexical_error() {
     assert_populate_all_files_fails_with_error(
         "tests/data/invalid-files/data-with-template-with-lexical-error/",
         temp_dir.path().to_str().unwrap(),
-        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/invalid-data.yml'. Failed to tokenize template file content. File: 'tests/data/invalid-files/",
+        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-lexical-error/invalid-data.yml'. Error: 'Failed to tokenize template file content. File: 'tests/data/invalid-files/",
     );
 }
 
@@ -197,7 +197,7 @@ fn populate_all_files_fails_if_template_file_has_syntax_error() {
     assert_populate_all_files_fails_with_error(
         "tests/data/invalid-files/data-with-template-with-syntax-error/",
         temp_dir.path().to_str().unwrap(),
-        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Failed to parse template file content. File: 'tests/data/invalid-files/",
+        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-template-with-syntax-error/invalid-data.yml'. Error: 'Failed to parse template file content. File: 'tests/data/invalid-files/",
     );
 }
 
@@ -207,7 +207,7 @@ fn populate_all_files_fails_if_data_file_is_missing_attribute_referenced_in_temp
     assert_populate_all_files_fails_with_error(
         "tests/data/invalid-files/data-with-missing-attribute/",
         temp_dir.path().to_str().unwrap(),
-        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-missing-attribute/invalid-data.yml'. Error: 'Path [name] is not defined in data file.'",
+        "Failed to populate data file. File: 'tests/data/invalid-files/data-with-missing-attribute/invalid-data.yml'. Error: 'Path [name] is not defined in data file.'.",
     );
 }
 
