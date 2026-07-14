@@ -26,10 +26,9 @@ pub fn populate_all_files(
     check_dir_exists(dst_dir_path)?;
 
     let mut template_cache = TemplateCache::new();
-    for (data_file_path, value) in &load_yamls(src_dir_path)? {
+    for (data_file_path, root) in &load_yamls(src_dir_path)? {
         info!("Processing data file: '{:?}'.", data_file_path);
-        let root = Node::from_yaml(value);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from(root);
 
         let populated_content = populate_data_set(
             &data_set,
@@ -61,16 +60,18 @@ pub fn populate_blog(
     check_dir_exists(src_dir_path)?;
     check_dir_exists(dst_dir_path)?;
 
-    let pages = load_yamls(src_dir_path)?;
-    let page_nodes: Vec<Node> = pages
-        .iter()
-        .map(|(file_path, value)| placeholders::path::embed(Node::from_yaml(value), file_path))
-        .collect();
+    let (data_file_paths, page_nodes): (Vec<PathBuf>, Vec<Node>) = load_yamls(src_dir_path)?
+        .into_iter()
+        .map(|(file_path, mut node)| {
+            placeholders::path::embed(&mut node, &file_path);
+            (file_path, node)
+        })
+        .unzip();
     let pages_placeholder = placeholders::pages::build(&page_nodes);
     let categories_placeholder = placeholders::categories::build(&page_nodes);
 
     let mut template_cache = TemplateCache::new();
-    for ((data_file_path, _), page_node) in pages.iter().zip(&page_nodes) {
+    for (data_file_path, page_node) in data_file_paths.iter().zip(&page_nodes) {
         info!("Processing data file: '{:?}'.", data_file_path);
         let root = placeholders::insert_virtual_placeholders(
             page_node,
@@ -98,8 +99,8 @@ pub fn populate_blog(
 }
 
 /// Collects and parses all dataset files in the given source directory recursively.
-fn load_yamls(dir_path: &str) -> Result<Vec<(PathBuf, serde_yaml::Value)>, String> {
-    let mut yamls: Vec<(PathBuf, serde_yaml::Value)> = WalkDir::new(dir_path)
+fn load_yamls(dir_path: &str) -> Result<Vec<(PathBuf, Node)>, String> {
+    let mut yamls: Vec<(PathBuf, Node)> = WalkDir::new(dir_path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
@@ -113,14 +114,14 @@ fn load_yamls(dir_path: &str) -> Result<Vec<(PathBuf, serde_yaml::Value)>, Strin
                     e
                 )
             })?;
-            let serde = data_file_parser::parse(&content).map_err(|e| {
+            let node = data_file_parser::parse(&content).map_err(|e| {
                 format!(
                     "Failed to parse data file content. File: '{}'. Error: '{}'.",
                     p.display(),
                     e
                 )
             })?;
-            Ok::<_, String>((p, serde))
+            Ok::<_, String>((p, node))
         })
         .collect::<Result<_, _>>()?;
     yamls.sort_by(|(a, _), (b, _)| a.cmp(b));
@@ -183,13 +184,12 @@ pub fn populate_file(
             data_file_path, e
         )
     })?;
-    let data = data_file_parser::parse(&data_content).map_err(|e| {
+    let root = data_file_parser::parse(&data_content).map_err(|e| {
         format!(
             "Failed to parse data file content. File: '{}'. Error: '{}'.",
             data_file_path, e
         )
     })?;
-    let root = Node::from_yaml(&data);
     let data_set = DataSet::from(&root);
     let mut template_cache = TemplateCache::new();
     populate_data_set(

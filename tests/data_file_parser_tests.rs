@@ -1,5 +1,7 @@
 use std::fs;
 use yasg::data_file_parser;
+use yasg::data_file_parser::DataSet;
+use yasg::expressions::Path;
 
 #[test]
 fn parse_loads_and_parses_data_file() {
@@ -7,23 +9,40 @@ fn parse_loads_and_parses_data_file() {
         .unwrap_or_else(|e| panic!("Failed to read data file: {}", e));
     let data = data_file_parser::parse(&content)
         .unwrap_or_else(|e| panic!("Failed to parse data file: {}", e));
+    let data_set = DataSet::from(&data);
 
-    assert_eq!(data["title"], "Hello World!");
+    assert_eq!(
+        data_set.get_str(&Path::parse("title")).unwrap(),
+        Some("Hello World!")
+    );
 
-    let backpack = data["backpack"]
-        .as_mapping()
-        .expect("backpack should be a mapping");
-    let items = backpack["items"]
-        .as_sequence()
-        .expect("backpack.items should be a sequence");
+    let items = data_set.list("", &Path::parse("backpack.items")).unwrap();
     assert_eq!(items.len(), 3);
 
-    assert_eq!(items[0]["name"], "sleeping bag");
-    assert_eq!(items[0]["weight"], "1.5kg");
+    assert_eq!(
+        items[0].get_str(&Path::parse("name")).unwrap(),
+        Some("sleeping bag")
+    );
+    assert_eq!(
+        items[0].get_str(&Path::parse("weight")).unwrap(),
+        Some("1.5kg")
+    );
 
-    assert_eq!(items[1]["name"], "tent");
-    assert_eq!(items[1]["weight"], "2.0kg");
+    assert_eq!(
+        items[1].get_str(&Path::parse("name")).unwrap(),
+        Some("tent")
+    );
+    assert_eq!(
+        items[1].get_str(&Path::parse("weight")).unwrap(),
+        Some("2.0kg")
+    );
 
-    assert_eq!(items[2]["name"], "water bottle");
-    assert_eq!(items[2]["weight"], "0.5kg");
+    assert_eq!(
+        items[2].get_str(&Path::parse("name")).unwrap(),
+        Some("water bottle")
+    );
+    assert_eq!(
+        items[2].get_str(&Path::parse("weight")).unwrap(),
+        Some("0.5kg")
+    );
 }

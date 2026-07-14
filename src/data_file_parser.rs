@@ -26,8 +26,8 @@ pub struct DataSet<'a> {
 }
 
 /// Parses the given yaml content into a yaml tree, which can then be converted into a [`Node`] tree using [`Node::from_yaml`].
-pub fn parse(input: &str) -> Result<serde_yaml::Value, serde_yaml::Error> {
-    serde_yaml::from_str(input)
+pub fn parse(input: &str) -> Result<Node, serde_yaml::Error> {
+    Ok(Node::from_yaml(&serde_yaml::from_str(input)?))
 }
 
 impl Node {
@@ -151,11 +151,35 @@ page:
         );
 
         let doc = result.unwrap();
-        assert_eq!(doc["page"]["title"], "Hra Go");
-        assert_eq!(doc["page"]["crumbs"][0]["text"], "Domů");
-        assert_eq!(doc["page"]["sections"][0]["title"], "Go klub Můstek");
-        assert_eq!(doc["page"]["sections"][0]["labels"], "CZ. Klub.");
-        assert_eq!(doc["page"]["sections"][1]["title"], "Go Magic");
-        assert_eq!(doc["page"]["sections"][1]["labels"], "ENG. YouTube.");
+        let data_set = DataSet::from(&doc);
+
+        assert_eq!(
+            data_set.get_str(&Path::parse("page.title")).unwrap(),
+            Some("Hra Go")
+        );
+
+        let crumbs = data_set.list("", &Path::parse("page.crumbs")).unwrap();
+        assert_eq!(
+            crumbs[0].get_str(&Path::parse("text")).unwrap(),
+            Some("Domů")
+        );
+
+        let sections = data_set.list("", &Path::parse("page.sections")).unwrap();
+        assert_eq!(
+            sections[0].get_str(&Path::parse("title")).unwrap(),
+            Some("Go klub Můstek")
+        );
+        assert_eq!(
+            sections[0].get_str(&Path::parse("labels")).unwrap(),
+            Some("CZ. Klub.")
+        );
+        assert_eq!(
+            sections[1].get_str(&Path::parse("title")).unwrap(),
+            Some("Go Magic")
+        );
+        assert_eq!(
+            sections[1].get_str(&Path::parse("labels")).unwrap(),
+            Some("ENG. YouTube.")
+        );
     }
 }
