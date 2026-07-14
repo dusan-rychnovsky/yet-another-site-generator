@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "MODE: SingleFile. Data File: '{}'. Template File: '{}'.",
                 data_file_path, template_file_path
             );
-            let result = yasg::populate_file(data_file_path, Option::Some(template_file_path))?;
+            let result = yasg::populate_file(data_file_path, template_file_path)?;
             println!("{}", result);
         }
         Ok(Config {

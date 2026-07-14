@@ -18,20 +18,26 @@ pub mod visitor;
 /// Populates the given template file using the given data file and returns the populated file content.
 pub fn populate_file(
     data_file_path: &str,
-    template_file_path: Option<&str>,
+    template_file_path: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     info!("Processing  data file: '{}'.", data_file_path);
 
-    let data_set_root = load_data_set_tree(data_file_path)?;
-    let data_set = DataSet::from(&data_set_root);
-
     let mut template_cache = TemplateCache::new();
-    populate_data_set(
-        &data_set,
-        data_file_path,
-        template_file_path,
-        &mut template_cache,
-    )
+    let populated_content = (|| {
+        let data_set_tree = load_data_set_tree(data_file_path)?;
+        let data_set = DataSet::from(&data_set_tree);
+
+        let template_tree = template_cache.load_template_tree(&template_file_path)?;
+        visitor::visit(template_tree, &data_set)
+    })()
+    .map_err(|e| {
+        format!(
+            "Failed to populate data file. File: '{}'. Error: '{}'.",
+            data_file_path, e
+        )
+    })?;
+
+    Ok(populated_content)
 }
 
 /// Looks up all data files in the given source directory. For each data file, loads the linked template file
@@ -45,9 +51,9 @@ pub fn populate_all_files(
     check_dir_exists(dst_dir_path)?;
 
     let mut template_cache = TemplateCache::new();
-    for (data_file_path, root) in &load_data_set_trees(src_dir_path)? {
+    for (data_file_path, data_set_root) in &load_data_set_trees(src_dir_path)? {
         info!("Processing data file: '{:?}'.", data_file_path);
-        let data_set = DataSet::from(root);
+        let data_set = DataSet::from(data_set_root);
 
         let populated_content = populate_data_set(
             &data_set,
