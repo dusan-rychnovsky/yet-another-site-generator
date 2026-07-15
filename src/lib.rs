@@ -95,22 +95,19 @@ pub fn populate_blog(
     check_dir_exists(src_dir_path)?;
     check_dir_exists(dst_dir_path)?;
 
-    let (data_file_paths, page_nodes): (Vec<PathBuf>, Vec<Node>) =
-        load_data_set_trees(src_dir_path)?
-            .into_iter()
-            .map(|(file_path, mut node)| {
-                placeholders::path::embed(&mut node, &file_path);
-                (file_path, node)
-            })
-            .unzip();
-    let pages_placeholder = placeholders::pages::build(&page_nodes);
-    let categories_placeholder = placeholders::categories::build(&page_nodes);
+    let mut data_set_trees_with_paths = load_data_set_trees(src_dir_path)?;
+    placeholders::embed(&mut data_set_trees_with_paths);
+
+    let data_set_trees: Vec<&Node> = data_set_trees_with_paths.iter().map(|(_, node)| node).collect();
+
+    let pages_placeholder = placeholders::pages::build(&data_set_trees);
+    let categories_placeholder = placeholders::categories::build(&data_set_trees);
 
     let mut template_cache = TemplateCache::new();
-    for (data_file_path, page_node) in data_file_paths.iter().zip(&page_nodes) {
+    for (data_file_path, page_node) in data_set_trees_with_paths {
         info!("Processing data file: '{}'.", data_file_path.display());
         let root = placeholders::insert_virtual_placeholders(
-            page_node,
+            &page_node,
             &pages_placeholder,
             &categories_placeholder,
         );
@@ -124,7 +121,7 @@ pub fn populate_blog(
             let populated_content = visitor::visit(template_tree, &data_set)?;
 
             let (output_path, output_dir_path) =
-                construct_output_path(data_file_path, src_dir_path, dst_dir_path)?;
+                construct_output_path(&data_file_path, src_dir_path, dst_dir_path)?;
 
             fs::create_dir_all(output_dir_path)?;
             fs::write(&output_path, populated_content)?;

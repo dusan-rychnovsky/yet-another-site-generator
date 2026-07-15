@@ -14,9 +14,9 @@ struct CategoryBuilder<'a> {
 /// on the `categories` chain declared in each page. Returns the tree as a [`Node::Seq`] of category
 /// nodes, where each category node is a [`Node::Map`] exposing `name`, `pages` and `subcategories`.
 /// Pages without a `categories` chain are not included in the tree.
-pub fn build(page_nodes: &[Node]) -> Node {
+pub fn build(page_nodes: &[&Node]) -> Node {
     let mut roots: BTreeMap<&str, CategoryBuilder> = BTreeMap::new();
-    for page in page_nodes {
+    for &page in page_nodes {
         if let Some(chain) = get_category_chain(page) {
             insert_page(&mut roots, &chain, page);
         }
@@ -139,7 +139,7 @@ mod tests {
         let values = parse_pages(&["title: Oats\ncategories: [home, cooking, recipes]"]);
         let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes);
+        let categories = build(&nodes.iter().collect::<Vec<_>>());
 
         assert_eq!(category_names(&categories), vec!["home"]);
         let home = &seq(&categories)[0];
@@ -171,7 +171,7 @@ mod tests {
         ]);
         let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes);
+        let categories = build(&nodes.iter().collect::<Vec<_>>());
 
         assert_eq!(category_names(&categories), vec!["home"]);
         let home = &seq(&categories)[0];
@@ -188,7 +188,7 @@ mod tests {
         ]);
         let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes);
+        let categories = build(&nodes.iter().collect::<Vec<_>>());
 
         let home = &seq(&categories)[0];
         assert_eq!(

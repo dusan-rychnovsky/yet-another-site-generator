@@ -1,8 +1,8 @@
 use crate::data_file_parser::Node;
 
 /// Builds the `PAGES` placeholder: a [`Node::Seq`] holding the datasource of every page in the blog.
-pub fn build(page_nodes: &[Node]) -> Node {
-    Node::Seq(page_nodes.to_vec())
+pub fn build(page_nodes: &[&Node]) -> Node {
+    Node::Seq(page_nodes.iter().map(|&node| node.clone()).collect())
 }
 
 #[cfg(test)]
@@ -17,7 +17,7 @@ mod tests {
             .collect();
         let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
 
-        let pages = build(&nodes);
+        let pages = build(&nodes.iter().collect::<Vec<_>>());
 
         match pages {
             Node::Seq(items) => assert_eq!(items.len(), 2),
