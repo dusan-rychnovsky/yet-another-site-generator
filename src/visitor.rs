@@ -5,51 +5,46 @@ use std::path::Path as FsPath;
 
 /// Populates the given [`TemplateTree`] with values from the given [`DataSet`].
 pub fn visit(tree: &TemplateTree, data: &DataSet) -> Result<String, String> {
-    visit_node(&tree.root, &[data])
+    visit_node(&tree.root, data)
 }
 
 /// Populates the subtree rooted at the given [`TemplateNode`] with values from the given [`DataSet`].
-fn visit_node(node: &TemplateNode, scopes: &[&DataSet]) -> Result<String, String> {
+fn visit_node(node: &TemplateNode, data: &DataSet) -> Result<String, String> {
     match node {
         Seq(nodes) => {
             let mut output = String::new();
             for child in nodes {
-                let str = visit_node(child, scopes)?;
+                let str = visit_node(child, data)?;
                 output.push_str(&str);
             }
             Ok(output)
         }
         Var(path) => {
-            let val = get_str(scopes, path)?;
+            let val = data.get_str(path)?;
             let val = replace_asterix(val)?;
             Ok(val)
         }
         Func(name, args) => {
             let output = match name.as_str() {
-                "LINK" => eval_link(scopes, args),
+                "LINK" => eval_link(data, args),
                 _ => Err(format!("Unknown function: '{}'.", name)),
             }?;
             Ok(output)
         }
         Text(text) => Ok(text.to_string()),
         ForEach(var, path, body) => {
-            let current_scope = scopes
-                .last()
-                .ok_or_else(|| "Data stack is empty.".to_string())?;
-            let items = current_scope.list(var, path)?;
+            let items = data.list(var, path)?;
             let mut output = String::new();
             for item in &items {
-                let mut inner = scopes.to_vec();
-                inner.push(item);
-                let str = visit_node(body, &inner)?;
+                let str = visit_node(body, item)?;
                 output.push_str(&str);
             }
             Ok(output)
         }
         If(expr, body) => match expr.predicate {
             Exists => {
-                if exists(scopes, &expr.path) {
-                    visit_node(body, scopes)
+                if data.exists(&expr.path) {
+                    visit_node(body, data)
                 } else {
                     Ok(String::new())
                 }
@@ -58,35 +53,17 @@ fn visit_node(node: &TemplateNode, scopes: &[&DataSet]) -> Result<String, String
     }
 }
 
-fn get_str<'a>(scopes: &[&'a DataSet<'_>], path: &Path) -> Result<&'a str, String> {
-    scopes
-        .iter()
-        .rev()
-        .find_map(|scope| scope.get_str(path).transpose())
-        .transpose()?
-        .ok_or_else(|| {
-            format!(
-                "Path [{}] is not defined in data file.",
-                path.segments.join(".")
-            )
-        })
-}
-
-fn exists(scopes: &[&DataSet], path: &Path) -> bool {
-    scopes.iter().any(|scope| scope.exists(path))
-}
-
 /// Evaluates the `LINK` function. It expects two path arguments - a source and a target file path -
 /// and returns a relative link pointing from the source to the target.
-fn eval_link(scopes: &[&DataSet], args: &[Path]) -> Result<String, String> {
+fn eval_link(data: &DataSet, args: &[Path]) -> Result<String, String> {
     if args.len() != 2 {
         return Err(format!(
             "Function 'LINK' expects 2 arguments, got {}.",
             args.len()
         ));
     }
-    let source = get_str(scopes, &args[0])?;
-    let target = get_str(scopes, &args[1])?;
+    let source = data.get_str(&args[0])?;
+    let target = data.get_str(&args[1])?;
     Ok(relative_link(source, target))
 }
 

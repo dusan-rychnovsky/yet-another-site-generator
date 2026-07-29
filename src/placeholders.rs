@@ -6,10 +6,10 @@ pub mod categories;
 pub mod pages;
 pub mod path;
 
-pub fn embed(data_set_trees: &mut Vec<(PathBuf, Node)>) {
-  for (data_file_path, data_set_tree) in data_set_trees.iter_mut() {
-    path::embed(data_set_tree, data_file_path);
-  }
+pub fn embed(data_set_trees: &mut [(PathBuf, Node)]) {
+    for (data_file_path, data_set_tree) in data_set_trees.iter_mut() {
+        path::embed(data_set_tree, data_file_path);
+    }
 }
 
 /// Returns a copy of the given page node with the root-level virtual placeholders inserted:

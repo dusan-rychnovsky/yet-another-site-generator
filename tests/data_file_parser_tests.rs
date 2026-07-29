@@ -13,7 +13,7 @@ fn parse_loads_and_parses_data_file() {
 
     assert_eq!(
         data_set.get_str(&Path::parse("title")).unwrap(),
-        Some("Hello World!")
+        "Hello World!"
     );
 
     let items = data_set.list("", &Path::parse("backpack.items")).unwrap();
@@ -21,28 +21,16 @@ fn parse_loads_and_parses_data_file() {
 
     assert_eq!(
         items[0].get_str(&Path::parse("name")).unwrap(),
-        Some("sleeping bag")
+        "sleeping bag"
     );
-    assert_eq!(
-        items[0].get_str(&Path::parse("weight")).unwrap(),
-        Some("1.5kg")
-    );
+    assert_eq!(items[0].get_str(&Path::parse("weight")).unwrap(), "1.5kg");
 
-    assert_eq!(
-        items[1].get_str(&Path::parse("name")).unwrap(),
-        Some("tent")
-    );
-    assert_eq!(
-        items[1].get_str(&Path::parse("weight")).unwrap(),
-        Some("2.0kg")
-    );
+    assert_eq!(items[1].get_str(&Path::parse("name")).unwrap(), "tent");
+    assert_eq!(items[1].get_str(&Path::parse("weight")).unwrap(), "2.0kg");
 
     assert_eq!(
         items[2].get_str(&Path::parse("name")).unwrap(),
-        Some("water bottle")
+        "water bottle"
     );
-    assert_eq!(
-        items[2].get_str(&Path::parse("weight")).unwrap(),
-        Some("0.5kg")
-    );
+    assert_eq!(items[2].get_str(&Path::parse("weight")).unwrap(), "0.5kg");
 }

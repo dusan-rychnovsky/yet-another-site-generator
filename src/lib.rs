@@ -27,7 +27,7 @@ pub fn populate_file(
 
     let mut template_cache = TemplateCache::new();
     let populated_content = (|| {
-        let template_tree = template_cache.load_template_tree(&template_file_path)?;
+        let template_tree = template_cache.load_template_tree(template_file_path)?;
         visitor::visit(template_tree, &data_set)
     })()
     .map_err(|e| {
@@ -98,7 +98,10 @@ pub fn populate_blog(
     let mut data_set_trees_with_paths = load_data_set_trees(src_dir_path)?;
     placeholders::embed(&mut data_set_trees_with_paths);
 
-    let data_set_trees: Vec<&Node> = data_set_trees_with_paths.iter().map(|(_, node)| node).collect();
+    let data_set_trees: Vec<&Node> = data_set_trees_with_paths
+        .iter()
+        .map(|(_, node)| node)
+        .collect();
 
     let pages_placeholder = placeholders::pages::build(&data_set_trees);
     let categories_placeholder = placeholders::categories::build(&data_set_trees);
@@ -220,7 +223,6 @@ fn construct_output_path(
 fn look_up_template_file_path(data_set: &DataSet, data_file_path: &str) -> Result<String, String> {
     let template_file_path = data_set
         .get_str(&expressions::Path::from_segment("template"))
-        .and_then(|v| v.ok_or_else(|| "Path [template] is not defined in data file.".to_string()))
         .map_err(|e| {
             format!(
                 "Failed to parse data file content. File: '{}'. Error: '{}'.",

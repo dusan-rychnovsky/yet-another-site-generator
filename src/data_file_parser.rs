@@ -14,17 +14,6 @@ pub enum Node {
     Other,
 }
 
-/// Represents a dataset backed by a [`Node`] tree.
-#[derive(Debug)]
-pub struct DataSet<'a> {
-    /// Context is used to offset paths in the represented tree, in cases when
-    /// the [`DataSet`] is referenced in the context of a variable in the template,
-    /// such as within foreach loops. Otherwise, it is an empty string.
-    pub context: &'a str,
-    /// Root node of the data tree.
-    pub root: &'a Node,
-}
-
 /// Parses the given yaml content into a yaml tree, which can then be converted into a [`Node`] tree using [`Node::from_yaml`].
 pub fn parse(input: &str) -> Result<Node, serde_yaml::Error> {
     Ok(Node::from_yaml(&serde_yaml::from_str(input)?))
@@ -48,24 +37,78 @@ impl Node {
     }
 }
 
+#[derive(Debug, Clone)]
+struct Scope<'a> {
+    /// Context is used to offset paths in the represented tree, in cases when
+    /// the parent [`DataSet`] is referenced in the context of a variable in the template,
+    /// such as within foreach loops. Otherwise, it is an empty string.
+    context: &'a str,
+    root: &'a Node,
+}
+
+impl<'a> Scope<'a> {
+    /// Locates a node in the represented tree by the given path.
+    fn locate(&self, path: &Path) -> Option<&'a Node> {
+        // offset path by dataset context, if exists
+        if !self.context.is_empty() {
+            if !path.segments.is_empty() && self.context == path.segments[0] {
+                let new_scope = Scope {
+                    context: "",
+                    root: self.root,
+                };
+                let new_path = Path {
+                    segments: path.segments[1..].to_vec(),
+                };
+                new_scope.locate(&new_path)
+            } else {
+                None
+            }
+        } else {
+            path.segments
+                .iter()
+                .try_fold(self.root, |acc, segment| match acc {
+                    Node::Map(map) => map.get(segment.as_str()),
+                    _ => None,
+                })
+        }
+    }
+}
+
+/// Represents a dataset backed by a [`Node`] tree.
+#[derive(Debug)]
+pub struct DataSet<'a> {
+    scopes: Vec<Scope<'a>>,
+}
+
 impl<'a> DataSet<'a> {
     /// Creates a new [`DataSet`] with empty [`DataSet::context`].
     pub fn from(root: &'a Node) -> Self {
-        DataSet { context: "", root }
+        DataSet {
+            scopes: vec![Scope { context: "", root }],
+        }
+    }
+
+    pub fn push(&self, context: &'a str, root: &'a Node) -> DataSet<'a> {
+        let mut scopes = self.scopes.to_vec();
+        scopes.push(Scope { context, root });
+        DataSet { scopes }
     }
 
     /// Gets a string value from the represented tree at the given path.
     /// Returns an error if the path is not defined in the tree
     /// or if it does not reference a string.
-    pub fn get_str(&self, path: &Path) -> Result<Option<&str>, String> {
+    pub fn get_str(&self, path: &Path) -> Result<&str, String> {
         let value = Self::locate(self, path);
         match value {
-            Some(Node::Str(value)) => Ok(Some(value.as_str())),
+            Some(Node::Str(value)) => Ok(value.as_str()),
             Some(_) => Err(format!(
                 "Path [{}] does not reference a string in data file.",
                 path.segments.join(".")
             )),
-            None => Ok(None),
+            None => Err(format!(
+                "Path [{}] is not defined in data file.",
+                path.segments.join(".")
+            )),
         }
     }
 
@@ -75,10 +118,10 @@ impl<'a> DataSet<'a> {
     ///
     /// # Arguments
     /// * `context` - context of the child datasets.
-    pub fn list(&self, context: &'a str, path: &Path) -> Result<Vec<DataSet<'a>>, String> {
+    pub fn list<'b>(&'b self, context: &'b str, path: &Path) -> Result<Vec<DataSet<'b>>, String> {
         let value = self.locate(path);
         match value {
-            Some(Node::Seq(seq)) => Ok(seq.iter().map(|v| DataSet { context, root: v }).collect()),
+            Some(Node::Seq(seq)) => Ok(seq.iter().map(|v| self.push(context, v)).collect()),
             Some(_) => Err(format!(
                 "Path [{}] does not reference a sequence in data file.",
                 path.segments.join(".")
@@ -95,30 +138,11 @@ impl<'a> DataSet<'a> {
         Self::locate(self, path).is_some()
     }
 
-    /// Locates a node in the represented tree by the given path.
-    fn locate(&self, path: &Path) -> Option<&'a Node> {
-        // offset path by dataset context, if exists
-        if !self.context.is_empty() {
-            if !path.segments.is_empty() && self.context == path.segments[0] {
-                let new_dataset = DataSet {
-                    context: "",
-                    root: self.root,
-                };
-                let new_path = Path {
-                    segments: path.segments[1..].to_vec(),
-                };
-                new_dataset.locate(&new_path)
-            } else {
-                None
-            }
-        } else {
-            path.segments
-                .iter()
-                .try_fold(self.root, |acc, segment| match acc {
-                    Node::Map(map) => map.get(segment.as_str()),
-                    _ => None,
-                })
-        }
+    fn locate(&self, path: &Path) -> Option<&Node> {
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|scope| scope.locate(path))
     }
 }
 
@@ -155,31 +179,28 @@ page:
 
         assert_eq!(
             data_set.get_str(&Path::parse("page.title")).unwrap(),
-            Some("Hra Go")
+            "Hra Go"
         );
 
         let crumbs = data_set.list("", &Path::parse("page.crumbs")).unwrap();
-        assert_eq!(
-            crumbs[0].get_str(&Path::parse("text")).unwrap(),
-            Some("Domů")
-        );
+        assert_eq!(crumbs[0].get_str(&Path::parse("text")).unwrap(), "Domů");
 
         let sections = data_set.list("", &Path::parse("page.sections")).unwrap();
         assert_eq!(
             sections[0].get_str(&Path::parse("title")).unwrap(),
-            Some("Go klub Můstek")
+            "Go klub Můstek"
         );
         assert_eq!(
             sections[0].get_str(&Path::parse("labels")).unwrap(),
-            Some("CZ. Klub.")
+            "CZ. Klub."
         );
         assert_eq!(
             sections[1].get_str(&Path::parse("title")).unwrap(),
-            Some("Go Magic")
+            "Go Magic"
         );
         assert_eq!(
             sections[1].get_str(&Path::parse("labels")).unwrap(),
-            Some("ENG. YouTube.")
+            "ENG. YouTube."
         );
     }
 }
