@@ -4,6 +4,7 @@ use log::info;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::rc::Rc;
 use template_cache::TemplateCache;
 use walkdir::WalkDir;
 
@@ -23,7 +24,7 @@ pub fn populate_file(
     info!("Processing  data file: '{}'.", data_file_path);
 
     let data_set_tree = load_data_set_tree(data_file_path)?;
-    let data_set = DataSet::from(&data_set_tree);
+    let data_set = DataSet::from_tree(data_set_tree);
 
     let mut template_cache = TemplateCache::new();
     let populated_content = (|| {
@@ -52,12 +53,11 @@ pub fn populate_all_files(
 
     let mut template_cache = TemplateCache::new();
     for (data_file_path, data_set_tree) in &load_data_set_trees(src_dir_path)? {
-        info!("Processing data file: '{}'.", data_file_path.display());
-        let data_set = DataSet::from(data_set_tree);
+        info!("Processing data file: '{}'.", data_file_path);
+        let data_set = DataSet::from_tree(Rc::clone(data_set_tree));
 
         (|| -> Result<(), Box<dyn std::error::Error>> {
-            let template_file_path =
-                look_up_template_file_path(&data_set, data_file_path.to_str().unwrap())?;
+            let template_file_path = look_up_template_file_path(&data_set, data_file_path)?;
             let template_tree = template_cache.load_template_tree(&template_file_path)?;
 
             let populated_content = visitor::visit(template_tree, &data_set)?;
@@ -74,8 +74,7 @@ pub fn populate_all_files(
         .map_err(|e| {
             format!(
                 "Failed to populate data file. File: '{}'. Error: '{}'.",
-                data_file_path.display(),
-                e
+                data_file_path, e
             )
         })?;
     }
@@ -96,29 +95,14 @@ pub fn populate_blog(
     check_dir_exists(dst_dir_path)?;
 
     let mut data_set_trees_with_paths = load_data_set_trees(src_dir_path)?;
-    placeholders::embed(&mut data_set_trees_with_paths);
-
-    let data_set_trees: Vec<&Node> = data_set_trees_with_paths
-        .iter()
-        .map(|(_, node)| node)
-        .collect();
-
-    let pages_placeholder = placeholders::pages::build(&data_set_trees);
-    let categories_placeholder = placeholders::categories::build(&data_set_trees);
+    placeholders::embed(&mut data_set_trees_with_paths)?;
 
     let mut template_cache = TemplateCache::new();
     for (data_file_path, page_node) in data_set_trees_with_paths {
-        info!("Processing data file: '{}'.", data_file_path.display());
-        let root = placeholders::insert_virtual_placeholders(
-            &page_node,
-            &pages_placeholder,
-            &categories_placeholder,
-        );
-        let data_set = DataSet::from(&root);
-
+        info!("Processing data file: '{}'.", data_file_path);
+        let data_set = DataSet::from_tree(page_node);
         (|| -> Result<(), Box<dyn std::error::Error>> {
-            let template_file_path =
-                look_up_template_file_path(&data_set, data_file_path.to_str().unwrap())?;
+            let template_file_path = look_up_template_file_path(&data_set, &data_file_path)?;
             let template_tree = template_cache.load_template_tree(&template_file_path)?;
 
             let populated_content = visitor::visit(template_tree, &data_set)?;
@@ -135,8 +119,7 @@ pub fn populate_blog(
         .map_err(|e| {
             format!(
                 "Failed to populate data file. File: '{}'. Error: '{}'.",
-                data_file_path.display(),
-                e
+                data_file_path, e
             )
         })?;
     }
@@ -144,15 +127,15 @@ pub fn populate_blog(
 }
 
 /// Collects and parses all dataset files in the given source directory recursively.
-fn load_data_set_trees(dir_path: &str) -> Result<Vec<(PathBuf, Node)>, String> {
-    let mut yamls: Vec<(PathBuf, Node)> = WalkDir::new(dir_path)
+fn load_data_set_trees(dir_path: &str) -> Result<Vec<(String, Rc<Node>)>, String> {
+    let mut yamls: Vec<(String, Rc<Node>)> = WalkDir::new(dir_path)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
         .filter(|e| e.path().extension().is_some_and(|ext| ext == "yml"))
-        .map(|e| e.path().to_path_buf())
+        .map(|e| e.path().to_string_lossy().into_owned())
         .map(|p| {
-            let node = load_data_set_tree(p.to_str().unwrap())?;
+            let node = load_data_set_tree(&p)?;
             Ok::<_, String>((p, node))
         })
         .collect::<Result<_, _>>()?;
@@ -160,7 +143,7 @@ fn load_data_set_trees(dir_path: &str) -> Result<Vec<(PathBuf, Node)>, String> {
     Ok(yamls)
 }
 
-fn load_data_set_tree(data_file_path: &str) -> Result<Node, String> {
+fn load_data_set_tree(data_file_path: &str) -> Result<Rc<Node>, String> {
     let content = fs::read_to_string(data_file_path).map_err(|e| {
         format!(
             "Failed to read data file content. File: '{}'. Error: '{}'.",
@@ -198,11 +181,11 @@ fn check_dir_exists(path: &str) -> Result<(), String> {
 /// The data file is expected to be located in the given source directory.
 /// Note that populated files are placed in the same relative locations as source data files.
 fn construct_output_path(
-    data_file_path: &Path,
+    data_file_path: &str,
     src_dir_path: &str,
     dst_dir_path: &str,
 ) -> Result<(PathBuf, PathBuf), String> {
-    let relative_data_file_path = data_file_path
+    let relative_data_file_path = Path::new(data_file_path)
         .strip_prefix(src_dir_path)
         .map_err(|e| format!("Failed to resolve relative data file path. Error: '{}'.", e))?;
     let output_path = Path::new(dst_dir_path)

@@ -9,7 +9,7 @@ fn parse_loads_and_parses_data_file() {
         .unwrap_or_else(|e| panic!("Failed to read data file: {}", e));
     let data = data_file_parser::parse(&content)
         .unwrap_or_else(|e| panic!("Failed to parse data file: {}", e));
-    let data_set = DataSet::from(&data);
+    let data_set = DataSet::from_tree(data);
 
     assert_eq!(
         data_set.get_str(&Path::parse("title")).unwrap(),

@@ -122,11 +122,12 @@ mod tests {
     use crate::data_file_parser::Node;
     use crate::expressions::{Expr, Path};
     use serde_yaml::{Mapping, Value};
+    use std::rc::Rc;
 
     #[test]
     fn visit_simple_text() {
-        let root = Node::Other;
-        let data = DataSet::from(&root);
+        let root = Rc::new(Node::Other);
+        let data = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Text("Hello, world!".to_string()),
         };
@@ -141,7 +142,7 @@ mod tests {
             Value::String("Julia".to_string()),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("Hello, ".to_string()),
@@ -166,7 +167,7 @@ mod tests {
             ),
         ]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Func(
                 "LINK".to_string(),
@@ -190,7 +191,7 @@ mod tests {
             ),
         ]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Func(
                 "LINK".to_string(),
@@ -205,7 +206,7 @@ mod tests {
     fn visit_func_fails_for_unknown_function() {
         let data = Value::Mapping(Mapping::new());
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Func("bogus".to_string(), Vec::new()),
         };
@@ -224,7 +225,7 @@ mod tests {
             Value::String("blog/index.yml".to_string()),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Func("LINK".to_string(), vec![Path::from_segment("PATH")]),
         };
@@ -240,7 +241,7 @@ mod tests {
     fn visit_var_fails_if_data_entry_doesnt_exist() {
         let data = Value::Mapping(Mapping::new());
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("Hello, ".to_string()),
@@ -272,7 +273,7 @@ mod tests {
             ])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("Hello, ".to_string()),
@@ -298,7 +299,7 @@ mod tests {
             )])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("Section title: ".to_string()),
@@ -329,7 +330,7 @@ mod tests {
             )])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![ForEach(
                 "link".to_string(),
@@ -373,7 +374,7 @@ mod tests {
             ),
         ]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("Categories:\n".to_string()),
@@ -426,7 +427,7 @@ Categories:
             ),
         ]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 // Referenced from the outer scope -> resolves to the outer value.
@@ -466,7 +467,7 @@ Category: Cooking
             )])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
@@ -491,7 +492,7 @@ Category: Cooking
             )])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["items", "amount"]),
@@ -525,7 +526,7 @@ Category: Cooking
             )])),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: If(
                 Expr::from(Exists, vec!["section", "subsections"]),
@@ -566,7 +567,7 @@ majitelem Dobré čajovny na Václavském náměstí v Praze."
             ),
         )]));
         let root = Node::from_yaml(&data);
-        let data_set = DataSet::from(&root);
+        let data_set = DataSet::from_tree(root);
         let tree = TemplateTree {
             root: Seq(vec![
                 Text("<p>".to_string()),

@@ -1,12 +1,13 @@
 use crate::data_file_parser::Node;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// Intermediate node used to incrementally build the CATEGORIES tree before converting it into a
 /// [`Node`].
 #[derive(Default)]
 struct CategoryBuilder<'a> {
-    pages: Vec<Node>,
+    pages: Vec<Rc<Node>>,
     subcategories: BTreeMap<&'a str, CategoryBuilder<'a>>,
 }
 
@@ -14,10 +15,10 @@ struct CategoryBuilder<'a> {
 /// on the `categories` chain declared in each page. Returns the tree as a [`Node::Seq`] of category
 /// nodes, where each category node is a [`Node::Map`] exposing `name`, `pages` and `subcategories`.
 /// Pages without a `categories` chain are not included in the tree.
-pub fn build(page_nodes: &[&Node]) -> Node {
+pub fn build(page_nodes: &[Rc<Node>]) -> Rc<Node> {
     let mut roots: BTreeMap<&str, CategoryBuilder> = BTreeMap::new();
-    for &page in page_nodes {
-        if let Some(chain) = get_category_chain(page) {
+    for page in page_nodes {
+        if let Some(chain) = get_category_chain(page.as_ref()) {
             insert_page(&mut roots, &chain, page);
         }
     }
@@ -30,13 +31,13 @@ fn get_category_chain(page: &Node) -> Option<Vec<&str>> {
         Node::Map(map) => map.get("categories")?,
         _ => return None,
     };
-    let segments = match categories {
+    let segments = match categories.as_ref() {
         Node::Seq(seq) => seq,
         _ => return None,
     };
     let chain: Vec<&str> = segments
         .iter()
-        .filter_map(|segment| match segment {
+        .filter_map(|segment| match segment.as_ref() {
             Node::Str(name) => Some(name.as_str()),
             _ => None,
         })
@@ -49,45 +50,45 @@ fn get_category_chain(page: &Node) -> Option<Vec<&str>> {
 fn insert_page<'a>(
     categories: &mut BTreeMap<&'a str, CategoryBuilder<'a>>,
     chain: &[&'a str],
-    page: &Node,
+    page: &Rc<Node>,
 ) {
     let category = categories.entry(chain[0]).or_default();
     let rest = &chain[1..];
     if rest.is_empty() {
-        category.pages.push(page.clone());
+        category.pages.push(Rc::clone(page));
     } else {
         insert_page(&mut category.subcategories, rest, page);
     }
 }
 
 /// Converts a map of named [`CategoryBuilder`]s into a [`Node::Seq`] of category nodes.
-fn categories_to_node(categories: BTreeMap<&str, CategoryBuilder<'_>>) -> Node {
-    Node::Seq(
+fn categories_to_node(categories: BTreeMap<&str, CategoryBuilder<'_>>) -> Rc<Node> {
+    Rc::new(Node::Seq(
         categories
             .into_iter()
             .map(|(name, category)| category_to_node(name, category))
             .collect(),
-    )
+    ))
 }
 
 /// Converts a single named [`CategoryBuilder`] into a [`Node::Map`] exposing `name`, `pages` and
 /// `subcategories`.
-fn category_to_node(name: &str, category: CategoryBuilder<'_>) -> Node {
+fn category_to_node(name: &str, category: CategoryBuilder<'_>) -> Rc<Node> {
     let mut map = HashMap::new();
-    map.insert("name".to_string(), Node::Str(name.to_string()));
-    map.insert("pages".to_string(), Node::Seq(category.pages));
+    map.insert("name".to_string(), Rc::new(Node::Str(name.to_string())));
+    map.insert("pages".to_string(), Rc::new(Node::Seq(category.pages)));
     map.insert(
         "subcategories".to_string(),
         categories_to_node(category.subcategories),
     );
-    Node::Map(map)
+    Rc::new(Node::Map(map))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Parses the given yaml documents into values, keeping them alive so [`Node`]s can borrow them.
+    /// Parses the given yaml documents into test values.
     fn parse_pages(yamls: &[&str]) -> Vec<serde_yaml::Value> {
         yamls
             .iter()
@@ -99,12 +100,13 @@ mod tests {
         match node {
             Node::Map(map) => map
                 .get(key)
+                .map(Rc::as_ref)
                 .unwrap_or_else(|| panic!("missing key '{key}'")),
             other => panic!("expected a map, got {other:?}"),
         }
     }
 
-    fn seq(node: &Node) -> &[Node] {
+    fn seq(node: &Node) -> &[Rc<Node>] {
         match node {
             Node::Seq(items) => items,
             other => panic!("expected a sequence, got {other:?}"),
@@ -137,9 +139,9 @@ mod tests {
     #[test]
     fn build_nests_a_page_under_its_full_category_chain() {
         let values = parse_pages(&["title: Oats\ncategories: [home, cooking, recipes]"]);
-        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes.iter().collect::<Vec<_>>());
+        let categories = build(&nodes);
 
         assert_eq!(category_names(&categories), vec!["home"]);
         let home = &seq(&categories)[0];
@@ -169,9 +171,9 @@ mod tests {
             "title: Empty\ncategories: []",
             "title: Scalar\ncategories: home",
         ]);
-        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes.iter().collect::<Vec<_>>());
+        let categories = build(&nodes);
 
         assert_eq!(category_names(&categories), vec!["home"]);
         let home = &seq(&categories)[0];
@@ -186,9 +188,9 @@ mod tests {
             "title: Finance\ncategories: [home, finance]",
             "title: Car Clowns\ncategories: [home, finance, mmm]",
         ]);
-        let nodes: Vec<Node> = values.iter().map(Node::from_yaml).collect();
+        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
 
-        let categories = build(&nodes.iter().collect::<Vec<_>>());
+        let categories = build(&nodes);
 
         let home = &seq(&categories)[0];
         assert_eq!(

@@ -1,5 +1,6 @@
 use crate::expressions::Path;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 /// Represents a node in the data tree.
 #[derive(Debug, Clone)]
@@ -7,22 +8,22 @@ pub enum Node {
     /// A scalar string value.
     Str(String),
     /// An ordered sequence of nodes.
-    Seq(Vec<Node>),
+    Seq(Vec<Rc<Node>>),
     /// A mapping of keys to nodes.
-    Map(HashMap<String, Node>),
+    Map(HashMap<String, Rc<Node>>),
     /// A value that is present but is not a string (e.g. number, bool, null).
     Other,
 }
 
-/// Parses the given yaml content into a yaml tree, which can then be converted into a [`Node`] tree using [`Node::from_yaml`].
-pub fn parse(input: &str) -> Result<Node, serde_yaml::Error> {
+/// Parses the given YAML file content into a [`Node`] tree.
+pub fn parse(input: &str) -> Result<Rc<Node>, serde_yaml::Error> {
     Ok(Node::from_yaml(&serde_yaml::from_str(input)?))
 }
 
 impl Node {
-    /// Converts a borrowed yaml value into a [`Node`].
-    pub fn from_yaml(value: &serde_yaml::Value) -> Self {
-        match value {
+    /// Converts a Serde YAML value into a [`Node`].
+    pub fn from_yaml(value: &serde_yaml::Value) -> Rc<Self> {
+        Rc::new(match value {
             serde_yaml::Value::String(s) => Node::Str(s.clone()),
             serde_yaml::Value::Sequence(seq) => {
                 Node::Seq(seq.iter().map(Node::from_yaml).collect())
@@ -33,64 +34,68 @@ impl Node {
                     .collect(),
             ),
             _ => Node::Other,
-        }
+        })
+    }
+
+    pub fn from_yaml_text(text: &str) -> Result<Rc<Self>, String> {
+        serde_yaml::from_str(text)
+            .map_err(|e| format!("Failed to parse YAML: {}", e))
+            .map(|value| Node::from_yaml(&value))
     }
 }
 
 #[derive(Debug, Clone)]
-struct Scope<'a> {
+struct Scope {
     /// Context is used to offset paths in the represented tree, in cases when
     /// the parent [`DataSet`] is referenced in the context of a variable in the template,
     /// such as within foreach loops. Otherwise, it is an empty string.
-    context: &'a str,
-    root: &'a Node,
+    context: String,
+    root: Rc<Node>,
 }
 
-impl<'a> Scope<'a> {
+impl Scope {
     /// Locates a node in the represented tree by the given path.
-    fn locate(&self, path: &Path) -> Option<&'a Node> {
-        // offset path by dataset context, if exists
-        if !self.context.is_empty() {
-            if !path.segments.is_empty() && self.context == path.segments[0] {
-                let new_scope = Scope {
-                    context: "",
-                    root: self.root,
-                };
-                let new_path = Path {
-                    segments: path.segments[1..].to_vec(),
-                };
-                new_scope.locate(&new_path)
-            } else {
-                None
-            }
+    fn locate(&self, path: &Path) -> Option<&Node> {
+        let segments = if self.context.is_empty() {
+            path.segments.as_slice()
+        } else if path.segments.first() == Some(&self.context) {
+            &path.segments[1..]
         } else {
-            path.segments
-                .iter()
-                .try_fold(self.root, |acc, segment| match acc {
-                    Node::Map(map) => map.get(segment.as_str()),
-                    _ => None,
-                })
-        }
+            return None;
+        };
+
+        segments
+            .iter()
+            .try_fold(self.root.as_ref(), |acc, segment| match acc {
+                Node::Map(map) => map.get(segment.as_str()).map(Rc::as_ref),
+                _ => None,
+            })
     }
 }
 
 /// Represents a dataset backed by a [`Node`] tree.
 #[derive(Debug)]
-pub struct DataSet<'a> {
-    scopes: Vec<Scope<'a>>,
+pub struct DataSet {
+    scopes: Vec<Scope>,
 }
 
-impl<'a> DataSet<'a> {
-    /// Creates a new [`DataSet`] with empty [`DataSet::context`].
-    pub fn from(root: &'a Node) -> Self {
+impl DataSet {
+    /// Creates a new [`DataSet`] with an empty context.
+    pub fn from_tree(root: Rc<Node>) -> Self {
         DataSet {
-            scopes: vec![Scope { context: "", root }],
+            scopes: vec![Scope {
+                context: String::new(),
+                root,
+            }],
         }
     }
 
-    pub fn push(&self, context: &'a str, root: &'a Node) -> DataSet<'a> {
+    pub fn push(&self, context: &str, root: &Rc<Node>) -> DataSet {
         let mut scopes = self.scopes.to_vec();
-        scopes.push(Scope { context, root });
+        scopes.push(Scope {
+            context: context.to_string(),
+            root: Rc::clone(root),
+        });
         DataSet { scopes }
     }
 
@@ -118,10 +123,10 @@ impl<'a> DataSet<'a> {
     ///
     /// # Arguments
     /// * `context` - context of the child datasets.
-    pub fn list<'b>(&'b self, context: &'b str, path: &Path) -> Result<Vec<DataSet<'b>>, String> {
+    pub fn list(&self, context: &str, path: &Path) -> Result<Vec<DataSet>, String> {
         let value = self.locate(path);
         match value {
-            Some(Node::Seq(seq)) => Ok(seq.iter().map(|v| self.push(context, v)).collect()),
+            Some(Node::Seq(seq)) => Ok(seq.iter().map(|node| self.push(context, node)).collect()),
             Some(_) => Err(format!(
                 "Path [{}] does not reference a sequence in data file.",
                 path.segments.join(".")
@@ -175,7 +180,7 @@ page:
         );
 
         let doc = result.unwrap();
-        let data_set = DataSet::from(&doc);
+        let data_set = DataSet::from_tree(doc);
 
         assert_eq!(
             data_set.get_str(&Path::parse("page.title")).unwrap(),

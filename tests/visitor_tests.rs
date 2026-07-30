@@ -16,7 +16,7 @@ fn visit_populates_template_file_with_data_file() {
         .unwrap_or_else(|e| panic!("Failed to read data file: '{}'.", e));
     let root = yasg::data_file_parser::parse(&data_content)
         .unwrap_or_else(|e| panic!("Failed to parse data file: '{}'.", e));
-    let data_set = DataSet::from(&root);
+    let data_set = DataSet::from_tree(root);
 
     let output = visitor::visit(&template, &data_set)
         .unwrap_or_else(|e| panic!("Failed to populate data file: '{}'.", e));
