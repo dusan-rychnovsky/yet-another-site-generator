@@ -402,6 +402,61 @@ Categories:
     }
 
     #[test]
+    fn visit_foreach_inner_scope_shadows_outer_scope() {
+        let data = Value::Mapping(Mapping::from_iter(vec![
+            (
+                Value::String("category".to_string()),
+                Value::Mapping(Mapping::from_iter(vec![(
+                    Value::String("title".to_string()),
+                    Value::String("Cooking".to_string()),
+                )])),
+            ),
+            (
+                Value::String("subcategories".to_string()),
+                Value::Sequence(vec![
+                    Value::Mapping(Mapping::from_iter(vec![(
+                        Value::String("title".to_string()),
+                        Value::String("Recipes".to_string()),
+                    )])),
+                    Value::Mapping(Mapping::from_iter(vec![(
+                        Value::String("title".to_string()),
+                        Value::String("Techniques".to_string()),
+                    )])),
+                ]),
+            ),
+        ]));
+        let root = Node::from_yaml(&data);
+        let data_set = DataSet::from(&root);
+        let tree = TemplateTree {
+            root: Seq(vec![
+                // Referenced from the outer scope -> resolves to the outer value.
+                Text("Category: ".to_string()),
+                Var(Path::from_segments(vec!["category", "title"])),
+                Text("\n".to_string()),
+                ForEach(
+                    "subcategory".to_string(),
+                    Path::from_segments(vec!["subcategories"]),
+                    Box::new(Seq(vec![
+                        // Referenced from the inner scope -> resolves to the inner value.
+                        Text("- ".to_string()),
+                        Var(Path::from_segments(vec!["subcategory", "title"])),
+                        Text("\n".to_string()),
+                    ])),
+                ),
+            ]),
+        };
+        let result = unwrap(visit(&tree, &data_set));
+        assert_eq!(
+            result,
+            "\
+Category: Cooking
+- Recipes
+- Techniques
+"
+        );
+    }
+
+    #[test]
     fn visit_if_exists() {
         let data = Value::Mapping(Mapping::from_iter(vec![(
             Value::String("items".to_string()),
