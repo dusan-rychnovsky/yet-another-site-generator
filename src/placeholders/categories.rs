@@ -6,81 +6,79 @@ use std::rc::Rc;
 /// Intermediate node used to incrementally build the CATEGORIES tree before converting it into a
 /// [`Node`].
 #[derive(Default)]
-struct CategoryBuilder<'a> {
+struct Category<'a> {
     pages: Vec<Rc<Node>>,
-    subcategories: BTreeMap<&'a str, CategoryBuilder<'a>>,
+    subcategories: BTreeMap<&'a str, Category<'a>>,
 }
 
-/// Builds the `CATEGORIES` placeholder by grouping the given pages into a tree of categories based
-/// on the `categories` chain declared in each page. Returns the tree as a [`Node::Seq`] of category
-/// nodes, where each category node is a [`Node::Map`] exposing `name`, `pages` and `subcategories`.
+/// Builds a category forest by grouping individual data set trees into (sub)categories based on
+/// their category paths as declared in each data set tree under the `categories` key.
+///
+/// The resulting category forest is returned as a [`Node::Seq`], where each node represents
+/// a (sub)category and is a [`Node::Map`], exposing `name`, `pages` and `subcategories`.
+///
 /// Pages without a `categories` chain are not included in the tree.
-pub fn build(page_nodes: &[Rc<Node>]) -> Rc<Node> {
-    let mut roots: BTreeMap<&str, CategoryBuilder> = BTreeMap::new();
-    for page in page_nodes {
-        if let Some(chain) = get_category_chain(page.as_ref()) {
-            insert_page(&mut roots, &chain, page);
+pub fn build(data_set_trees: &[Rc<Node>]) -> Rc<Node> {
+    let mut categories = BTreeMap::new();
+    for data_set_tree in data_set_trees {
+        if let Some(category_path) = get_category_path(data_set_tree.as_ref()) {
+            insert_data_set_tree(&mut categories, &category_path, data_set_tree);
         }
     }
-    categories_to_node(roots)
+    to_tree(categories)
 }
 
-/// Extracts the `categories` chain from the given page node, if it is present and non-empty.
-fn get_category_chain(page: &Node) -> Option<Vec<&str>> {
-    let categories = match page {
+/// Extracts the `categories` chain from the given data set tree, if it is present and non-empty.
+fn get_category_path(data_set_tree: &Node) -> Option<Vec<&str>> {
+    let categories = match data_set_tree {
         Node::Map(map) => map.get("categories")?,
         _ => return None,
     };
-    let segments = match categories.as_ref() {
+    let categories = match categories.as_ref() {
         Node::Seq(seq) => seq,
         _ => return None,
     };
-    let chain: Vec<&str> = segments
+    let path: Vec<&str> = categories
         .iter()
         .filter_map(|segment| match segment.as_ref() {
             Node::Str(name) => Some(name.as_str()),
             _ => None,
         })
         .collect();
-    if chain.is_empty() { None } else { Some(chain) }
+    if path.is_empty() { None } else { Some(path) }
 }
 
-/// Inserts the given page into the categories tree, following (and creating as needed) the
-/// categories named by `chain`. The page is assigned to the last category in the chain.
-fn insert_page<'a>(
-    categories: &mut BTreeMap<&'a str, CategoryBuilder<'a>>,
-    chain: &[&'a str],
-    page: &Rc<Node>,
+/// Inserts the given data set tree into the categories forest according to its category path.
+fn insert_data_set_tree<'a>(
+    categories: &mut BTreeMap<&'a str, Category<'a>>,
+    category_path: &[&'a str],
+    tree: &Rc<Node>,
 ) {
-    let category = categories.entry(chain[0]).or_default();
-    let rest = &chain[1..];
+    let category = categories.entry(category_path[0]).or_default();
+    let rest = &category_path[1..];
     if rest.is_empty() {
-        category.pages.push(Rc::clone(page));
+        category.pages.push(Rc::clone(tree));
     } else {
-        insert_page(&mut category.subcategories, rest, page);
+        insert_data_set_tree(&mut category.subcategories, rest, tree);
     }
 }
 
-/// Converts a map of named [`CategoryBuilder`]s into a [`Node::Seq`] of category nodes.
-fn categories_to_node(categories: BTreeMap<&str, CategoryBuilder<'_>>) -> Rc<Node> {
+/// Converts a category tree into a [`Node::Seq`] representation.
+fn to_tree(categories: BTreeMap<&str, Category<'_>>) -> Rc<Node> {
     Rc::new(Node::Seq(
         categories
             .into_iter()
-            .map(|(name, category)| category_to_node(name, category))
+            .map(|(name, category)| to_node(name, category))
             .collect(),
     ))
 }
 
-/// Converts a single named [`CategoryBuilder`] into a [`Node::Map`] exposing `name`, `pages` and
-/// `subcategories`.
-fn category_to_node(name: &str, category: CategoryBuilder<'_>) -> Rc<Node> {
+/// Converts a category into a [`Node::Map`] representation.
+fn to_node(name: &str, category: Category<'_>) -> Rc<Node> {
     let mut map = HashMap::new();
     map.insert("name".to_string(), Rc::new(Node::Str(name.to_string())));
     map.insert("pages".to_string(), Rc::new(Node::Seq(category.pages)));
-    map.insert(
-        "subcategories".to_string(),
-        categories_to_node(category.subcategories),
-    );
+    map.insert("subcategories".to_string(), to_tree(category.subcategories));
     Rc::new(Node::Map(map))
 }
 
@@ -88,11 +86,10 @@ fn category_to_node(name: &str, category: CategoryBuilder<'_>) -> Rc<Node> {
 mod tests {
     use super::*;
 
-    /// Parses the given yaml documents into test values.
-    fn parse_pages(yamls: &[&str]) -> Vec<serde_yaml::Value> {
+    fn parse_yaml_texts(yamls: &[&str]) -> Result<Vec<Rc<Node>>, String> {
         yamls
             .iter()
-            .map(|yaml| serde_yaml::from_str(yaml).expect("valid yaml"))
+            .map(|yaml| Node::from_yaml_text(yaml))
             .collect()
     }
 
@@ -137,9 +134,9 @@ mod tests {
     }
 
     #[test]
-    fn build_nests_a_page_under_its_full_category_chain() {
-        let values = parse_pages(&["title: Oats\ncategories: [home, cooking, recipes]"]);
-        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
+    fn build_nests_a_page_under_its_full_category_path() {
+        let nodes =
+            parse_yaml_texts(&["title: Oats\ncategories: [home, cooking, recipes]"]).unwrap();
 
         let categories = build(&nodes);
 
@@ -164,14 +161,14 @@ mod tests {
     }
 
     #[test]
-    fn build_ignores_pages_without_a_categories_chain() {
-        let values = parse_pages(&[
+    fn build_ignores_pages_without_a_categories_path() {
+        let nodes = parse_yaml_texts(&[
             "title: Post\ncategories: [home, blog]",
             "title: Standalone",
             "title: Empty\ncategories: []",
             "title: Scalar\ncategories: home",
-        ]);
-        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
+        ])
+        .unwrap();
 
         let categories = build(&nodes);
 
@@ -184,11 +181,11 @@ mod tests {
 
     #[test]
     fn build_lets_a_category_hold_both_pages_and_subcategories() {
-        let values = parse_pages(&[
+        let nodes = parse_yaml_texts(&[
             "title: Finance\ncategories: [home, finance]",
             "title: Car Clowns\ncategories: [home, finance, mmm]",
-        ]);
-        let nodes: Vec<Rc<Node>> = values.iter().map(Node::from_yaml).collect();
+        ])
+        .unwrap();
 
         let categories = build(&nodes);
 
