@@ -93,43 +93,23 @@ mod tests {
             .collect()
     }
 
-    fn child<'a>(node: &'a Node, key: &str) -> &'a Node {
-        match node {
-            Node::Map(map) => map
-                .get(key)
-                .map(Rc::as_ref)
-                .unwrap_or_else(|| panic!("missing key '{key}'")),
-            other => panic!("expected a map, got {other:?}"),
-        }
-    }
-
-    fn seq(node: &Node) -> &[Rc<Node>] {
-        match node {
-            Node::Seq(items) => items,
-            other => panic!("expected a sequence, got {other:?}"),
-        }
-    }
-
-    fn text(node: &Node) -> &str {
-        match node {
-            Node::Str(value) => value.as_str(),
-            other => panic!("expected a string, got {other:?}"),
-        }
-    }
-
-    /// Names of the categories in the given `CATEGORIES`/`subcategories` sequence, in order.
     fn category_names(categories: &Node) -> Vec<&str> {
-        seq(categories)
+        categories
+            .get_seq()
+            .unwrap()
             .iter()
-            .map(|category| text(child(category, "name")))
+            .map(|category| category.get_map_child("name").unwrap().get_text().unwrap())
             .collect()
     }
 
-    /// Titles of the pages directly assigned to the given category, in order.
     fn page_titles(category: &Node) -> Vec<&str> {
-        seq(child(category, "pages"))
+        category
+            .get_map_child("pages")
+            .unwrap()
+            .get_seq()
+            .unwrap()
             .iter()
-            .map(|page| text(child(page, "title")))
+            .map(|page| page.get_map_child("title").unwrap().get_text().unwrap())
             .collect()
     }
 
@@ -141,23 +121,31 @@ mod tests {
         let categories = build(&nodes);
 
         assert_eq!(category_names(&categories), vec!["home"]);
-        let home = &seq(&categories)[0];
+        let home = &categories.get_seq().unwrap()[0];
         assert!(page_titles(home).is_empty());
 
         assert_eq!(
-            category_names(child(home, "subcategories")),
+            category_names(home.get_map_child("subcategories").unwrap()),
             vec!["cooking"]
         );
-        let cooking = &seq(child(home, "subcategories"))[0];
+        let cooking = &home
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
         assert!(page_titles(cooking).is_empty());
 
         assert_eq!(
-            category_names(child(cooking, "subcategories")),
+            category_names(cooking.get_map_child("subcategories").unwrap()),
             vec!["recipes"]
         );
-        let recipes = &seq(child(cooking, "subcategories"))[0];
+        let recipes = &cooking
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
         assert_eq!(page_titles(recipes), vec!["Oats"]);
-        assert!(category_names(child(recipes, "subcategories")).is_empty());
+        assert!(category_names(recipes.get_map_child("subcategories").unwrap()).is_empty());
     }
 
     #[test]
@@ -173,9 +161,16 @@ mod tests {
         let categories = build(&nodes);
 
         assert_eq!(category_names(&categories), vec!["home"]);
-        let home = &seq(&categories)[0];
-        assert_eq!(category_names(child(home, "subcategories")), vec!["blog"]);
-        let blog = &seq(child(home, "subcategories"))[0];
+        let home = &categories.get_seq().unwrap()[0];
+        assert_eq!(
+            category_names(home.get_map_child("subcategories").unwrap()),
+            vec!["blog"]
+        );
+        let blog = &home
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
         assert_eq!(page_titles(blog), vec!["Post"]);
     }
 
@@ -189,15 +184,26 @@ mod tests {
 
         let categories = build(&nodes);
 
-        let home = &seq(&categories)[0];
+        let home = &categories.get_seq().unwrap()[0];
         assert_eq!(
-            category_names(child(home, "subcategories")),
+            category_names(home.get_map_child("subcategories").unwrap()),
             vec!["finance"]
         );
-        let finance = &seq(child(home, "subcategories"))[0];
+        let finance = &home
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
         assert_eq!(page_titles(finance), vec!["Finance"]);
-        assert_eq!(category_names(child(finance, "subcategories")), vec!["mmm"]);
-        let mmm = &seq(child(finance, "subcategories"))[0];
+        assert_eq!(
+            category_names(finance.get_map_child("subcategories").unwrap()),
+            vec!["mmm"]
+        );
+        let mmm = &finance
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
         assert_eq!(page_titles(mmm), vec!["Car Clowns"]);
     }
 }

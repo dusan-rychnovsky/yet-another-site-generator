@@ -42,6 +42,27 @@ impl Node {
             .map_err(|e| format!("Failed to parse YAML: {}", e))
             .map(|value| Node::from_yaml(&value))
     }
+
+    pub fn get_map_child(&self, key: &str) -> Option<&Node> {
+        match self {
+            Node::Map(map) => map.get(key).map(Rc::as_ref),
+            _ => None,
+        }
+    }
+
+    pub fn get_seq(&self) -> Option<&[Rc<Node>]> {
+        match self {
+            Node::Seq(seq) => Some(seq.as_slice()),
+            _ => None,
+        }
+    }
+
+    pub fn get_text(&self) -> Option<&str> {
+        match self {
+            Node::Str(s) => Some(s.as_str()),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,9 +87,8 @@ impl Scope {
 
         segments
             .iter()
-            .try_fold(self.root.as_ref(), |acc, segment| match acc {
-                Node::Map(map) => map.get(segment.as_str()).map(Rc::as_ref),
-                _ => None,
+            .try_fold(self.root.as_ref(), |node, segment| {
+                node.get_map_child(segment)
             })
     }
 }

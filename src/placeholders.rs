@@ -45,30 +45,6 @@ pub fn embed(data_set_trees_with_paths: &mut [(String, Rc<Node>)]) -> Result<(),
 mod tests {
     use super::*;
 
-    fn child<'a>(node: &'a Node, key: &str) -> &'a Node {
-        match node {
-            Node::Map(map) => map
-                .get(key)
-                .map(Rc::as_ref)
-                .unwrap_or_else(|| panic!("missing key '{key}'")),
-            other => panic!("expected a map, got {other:?}"),
-        }
-    }
-
-    fn seq(node: &Node) -> &[Rc<Node>] {
-        match node {
-            Node::Seq(items) => items,
-            other => panic!("expected a sequence, got {other:?}"),
-        }
-    }
-
-    fn text(node: &Node) -> &str {
-        match node {
-            Node::Str(value) => value.as_str(),
-            other => panic!("expected a string, got {other:?}"),
-        }
-    }
-
     fn keys(node: &Node) -> Vec<&str> {
         match node {
             Node::Map(map) => {
@@ -99,12 +75,18 @@ mod tests {
             keys(&data[0].1),
             vec!["CATEGORIES", "PAGES", "PATH", "title"]
         );
-        assert_eq!(text(child(&data[0].1, "PATH")), "blog/a.yml");
+        assert_eq!(
+            data[0].1.get_map_child("PATH").unwrap().get_text().unwrap(),
+            "blog/a.yml"
+        );
         assert_eq!(
             keys(&data[1].1),
             vec!["CATEGORIES", "PAGES", "PATH", "title"]
         );
-        assert_eq!(text(child(&data[1].1, "PATH")), "blog/b.yml");
+        assert_eq!(
+            data[1].1.get_map_child("PATH").unwrap().get_text().unwrap(),
+            "blog/b.yml"
+        );
     }
 
     #[test]
@@ -127,12 +109,15 @@ mod tests {
         embed(&mut data).unwrap();
 
         for (_, root) in &data {
-            let pages = seq(child(root, "PAGES"));
-            let paths: Vec<&str> = pages.iter().map(|page| text(child(page, "PATH"))).collect();
+            let pages = root.get_map_child("PAGES").unwrap().get_seq().unwrap();
+            let paths: Vec<&str> = pages
+                .iter()
+                .map(|page| page.get_map_child("PATH").unwrap().get_text().unwrap())
+                .collect();
             assert_eq!(paths, vec!["blog/a.yml", "blog/b.yml", "blog/c.yml"]);
             let titles: Vec<&str> = pages
                 .iter()
-                .map(|page| text(child(page, "title")))
+                .map(|page| page.get_map_child("title").unwrap().get_text().unwrap())
                 .collect();
             assert_eq!(titles, vec!["A", "B", "C"]);
         }
@@ -147,11 +132,23 @@ mod tests {
 
         embed(&mut data).unwrap();
 
-        let categories = seq(child(&data[0].1, "CATEGORIES"));
+        let categories = data[0]
+            .1
+            .get_map_child("CATEGORIES")
+            .unwrap()
+            .get_seq()
+            .unwrap();
         let home = &categories[0];
-        let blog = &seq(child(home, "subcategories"))[0];
-        let pages = seq(child(blog, "pages"));
-        assert_eq!(text(child(&pages[0], "PATH")), "blog/a.yml");
+        let blog = &home
+            .get_map_child("subcategories")
+            .unwrap()
+            .get_seq()
+            .unwrap()[0];
+        let pages = blog.get_map_child("pages").unwrap().get_seq().unwrap();
+        assert_eq!(
+            pages[0].get_map_child("PATH").unwrap().get_text().unwrap(),
+            "blog/a.yml"
+        );
     }
 
     #[test]
